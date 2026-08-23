@@ -30,12 +30,16 @@ class StateManager:
         serialized = json.dumps(clean, sort_keys=True)
         return hmac.new(SECRET_KEY, serialized.encode("utf-8"), hashlib.sha256).hexdigest()
 
-    def init_session(self, task_description: str) -> dict[str, Any]:
-        """Initialize a new orchestration session with HMAC anti-tamper signature."""
+    def generate_session_id(self, task_description: str) -> str:
+        """Generate a deterministic slugified session ID."""
         slug = re.sub(r"[^a-z0-9]+", "-", task_description.lower()).strip("-")[:30]
-        session_id = f"{datetime.now(UTC).strftime('%Y-%m-%d')}-{slug}"
+        return f"{datetime.now(UTC).strftime('%Y-%m-%d')}-{slug}"
+
+    def init_session(self, task_description: str, session_id: str | None = None) -> dict[str, Any]:
+        """Initialize a new orchestration session with HMAC anti-tamper signature."""
+        sid = session_id or self.generate_session_id(task_description)
         state: dict[str, Any] = {
-            "session_id": session_id,
+            "session_id": sid,
             "current_phase": "DESIGN",
             "current_phase_approved": False,
             "task_description": task_description,

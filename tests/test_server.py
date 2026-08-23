@@ -5,6 +5,8 @@ from unittest.mock import patch
 import pytest
 
 from orchestrator_mcp.models import (
+    AgentListResult,
+    AgentSummary,
     ApproveResult,
     ArchiveResult,
     DAGResult,
@@ -22,6 +24,7 @@ from orchestrator_mcp.server import (
     main,
     orchestrate_approve,
     orchestrate_archive,
+    orchestrate_get_agents,
     orchestrate_get_dag_batches,
     orchestrate_init,
     orchestrate_status,
@@ -56,7 +59,25 @@ def test_orchestrate_init_success(temp_workspace: Path) -> None:
 
     mandates_file = temp_workspace / ".orchestrator" / "project-mandates.md"
     assert mandates_file.exists()
-    assert "Critical Project Mandates" in mandates_file.read_text()
+    mandates_content = mandates_file.read_text()
+    assert "Critical Project Mandates" in mandates_content
+    assert "No Silent Fallbacks" in mandates_content
+    assert "NEVER return sentinel or fabricated values" in mandates_content
+
+
+def test_orchestrate_get_agents() -> None:
+    res = orchestrate_get_agents()
+    assert isinstance(res, AgentListResult)
+    assert res.success is True
+    assert len(res.agents) == 12
+    agent_names = [a.name for a in res.agents]
+    assert "architect" in agent_names
+    assert "implementation-reviewer" in agent_names
+    for agent in res.agents:
+        assert isinstance(agent, AgentSummary)
+        assert agent.name.strip() != ""
+        assert agent.role.strip() != ""
+        assert agent.description.strip() != ""
 
 
 def test_orchestrate_init_concurrent_lock_failure(
@@ -71,6 +92,24 @@ def test_orchestrate_init_concurrent_lock_failure(
     assert "Active orchestration session" in res2.error
 
 
+def test_orchestrate_init_does_not_corrupt_state_on_live_lock_failure(
+    temp_workspace: Path, mock_alive_pid: None
+) -> None:
+    res1 = orchestrate_init("Task 1", workspace_root=str(temp_workspace))
+    assert res1.success is True
+    original_session_id = res1.session_id
+
+    res2 = orchestrate_init("Task 2", workspace_root=str(temp_workspace))
+    assert res2.success is False
+    assert res2.error is not None
+    assert "Active orchestration session" in res2.error
+
+    state_file = temp_workspace / ".orchestrator" / "session.json"
+    state_data = json.loads(state_file.read_text())
+    assert state_data["session_id"] == original_session_id
+    assert state_data["task_description"] == "Task 1"
+
+
 def test_orchestrate_init_reclaims_stale_lock(temp_workspace: Path, mock_dead_pid: None) -> None:
     lock_file = temp_workspace / ".orchestrator" / "session.lock"
     lock_file.write_text(json.dumps({"session_id": "old-session", "pid": 99999}))
@@ -78,6 +117,33 @@ def test_orchestrate_init_reclaims_stale_lock(temp_workspace: Path, mock_dead_pi
     res = orchestrate_init("Resume Work", workspace_root=str(temp_workspace))
     assert res.success is True
     assert res.phase == "DESIGN"
+
+
+def test_orchestrate_init_archives_stale_session_on_dead_pid(
+    temp_workspace: Path, mock_dead_pid: None
+) -> None:
+    state_mgr = StateManager(temp_workspace)
+    old_state = state_mgr.init_session("Old Dead Task")
+    old_session_id = old_state["session_id"]
+
+    lock_file = temp_workspace / ".orchestrator" / "session.lock"
+    lock_file.write_text(json.dumps({"session_id": old_session_id, "pid": 88888}))
+
+    design_file = temp_workspace / ".orchestrator" / "design.md"
+    design_file.write_text("# Old Design Doc\n")
+
+    res = orchestrate_init("Fresh New Task", workspace_root=str(temp_workspace))
+    assert res.success is True
+    assert res.session_id != old_session_id
+
+    archive_dir = temp_workspace / ".orchestrator" / "archive" / old_session_id
+    assert (archive_dir / "session.json").exists()
+    assert (archive_dir / "design.md").exists()
+
+    new_state = state_mgr.load_state()
+    assert new_state is not None
+    assert new_state["session_id"] == res.session_id
+    assert new_state["task_description"] == "Fresh New Task"
 
 
 def test_orchestrate_status_no_session(temp_workspace: Path) -> None:
@@ -95,7 +161,7 @@ def test_orchestrate_status_active_session(temp_workspace: Path) -> None:
     assert res.phase == "DESIGN"
 
 
-def test_orchestrate_status_tampered_state_raises(temp_workspace: Path) -> None:
+def test_orchestrate_status_tampered_state_surfaces_error(temp_workspace: Path) -> None:
     orchestrate_init("Tamper Test", workspace_root=str(temp_workspace))
     state_file = temp_workspace / ".orchestrator" / "session.json"
     data = json.loads(state_file.read_text())
@@ -104,6 +170,28 @@ def test_orchestrate_status_tampered_state_raises(temp_workspace: Path) -> None:
 
     with pytest.raises(StateTamperError):
         orchestrate_status(workspace_root=str(temp_workspace))
+
+
+def test_orchestrate_approve_surfaces_tamper_error(temp_workspace: Path) -> None:
+    orchestrate_init("Tamper Approve Test", workspace_root=str(temp_workspace))
+    state_file = temp_workspace / ".orchestrator" / "session.json"
+    data = json.loads(state_file.read_text())
+    data["task_description"] = "Illegally Tampered Task"
+    state_file.write_text(json.dumps(data, indent=2))
+
+    with pytest.raises(StateTamperError):
+        orchestrate_approve(workspace_root=str(temp_workspace))
+
+
+def test_orchestrate_verify_surfaces_tamper_error(temp_workspace: Path) -> None:
+    orchestrate_init("Tamper Verify Test", workspace_root=str(temp_workspace))
+    state_file = temp_workspace / ".orchestrator" / "session.json"
+    data = json.loads(state_file.read_text())
+    data["current_phase"] = "EXECUTE"
+    state_file.write_text(json.dumps(data, indent=2))
+
+    with pytest.raises(StateTamperError):
+        orchestrate_verify(workspace_root=str(temp_workspace))
 
 
 def test_orchestrate_approve_no_session(temp_workspace: Path) -> None:

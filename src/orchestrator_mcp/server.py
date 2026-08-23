@@ -1,11 +1,15 @@
+import json
 from pathlib import Path
 
 from mcp.server.mcpserver import MCPServer
 
+from .agents import CONCRETE_AGENTS
 from .config import resolve_workspace_root
 from .dag import DAGScheduler
 from .lock import LockError, SessionLockManager
 from .models import (
+    AgentListResult,
+    AgentSummary,
     ApproveResult,
     ArchiveResult,
     DAGBatch,
@@ -23,6 +27,17 @@ from .state import StateManager
 from .verifier import VerificationEngine
 
 mcp = MCPServer("orchestrator-mcp")
+
+DEFAULT_PROJECT_MANDATES = """# Critical Project Mandates
+
+ALL agents MUST obey these rules. They override conflicting instructions.
+
+## No Silent Fallbacks
+- NEVER return sentinel or fabricated values (0.5, 0.0, "unknown", "N/A") when data is missing.
+- NEVER use default argument fallbacks (getattr(x, "y", 0.005), x or 100) that fabricate data.
+- NEVER hardcode magic strings that should come from actual pipeline config ("ewma", "yang_zhang").
+- ALWAYS raise when required data is unavailable or cannot be determined truthfully.
+"""
 
 
 def get_phase_prompt(phase: str) -> str:
@@ -44,13 +59,34 @@ def orchestrate_init(task_description: str, workspace_root: str | None = None) -
     state_mgr = StateManager(root)
 
     try:
-        state = state_mgr.init_session(task_description)
-        lock_mgr.acquire_lock(state["session_id"])
+        # Pre-check active lock before mutating state
+        if lock_mgr.lock_file.exists():
+            try:
+                lock_data = json.loads(lock_mgr.lock_file.read_text())
+                pid = lock_data.get("pid", 0)
+                if lock_mgr.is_process_alive(pid):
+                    return InitResult(
+                        success=False,
+                        error=f"Active orchestration session '{lock_data.get('session_id')}' in progress (PID {pid}). "
+                        "Run orchestrate_archive to release lock.",
+                    )
+                # Stale lock from dead PID: auto-archive prior session
+                lock_mgr.force_archive()
+            except (json.JSONDecodeError, OSError):
+                lock_mgr.release_lock(force=True)
+        elif state_mgr.state_file.exists():
+            # Stale unarchived session left on disk without lock
+            lock_mgr.force_archive()
+
+        # Generate session ID and acquire atomic lock FIRST
+        session_id = state_mgr.generate_session_id(task_description)
+        lock_mgr.acquire_lock(session_id)
+
+        # State is only written after lock acquisition succeeds
+        state = state_mgr.init_session(task_description, session_id=session_id)
         mandates_file = root / ".orchestrator" / "project-mandates.md"
         if not mandates_file.exists():
-            mandates_file.write_text(
-                "# Critical Project Mandates\n\nALL agents MUST obey these rules.\n"
-            )
+            mandates_file.write_text(DEFAULT_PROJECT_MANDATES, encoding="utf-8")
         return InitResult(
             success=True,
             session_id=state["session_id"],
@@ -171,6 +207,16 @@ def orchestrate_get_dag_batches(workspace_root: str | None = None) -> DAGResult:
         )
     except Exception as e:  # noqa: BLE001
         return DAGResult(success=False, error=str(e))
+
+
+@mcp.tool()
+def orchestrate_get_agents() -> AgentListResult:
+    """List all available specialized orchestrator agent personas and their roles."""
+    summaries = [
+        AgentSummary(name=name, role=info["role"], description=info["description"])
+        for name, info in CONCRETE_AGENTS.items()
+    ]
+    return AgentListResult(success=True, agents=summaries)
 
 
 def main() -> None:

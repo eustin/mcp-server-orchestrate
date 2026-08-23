@@ -47,40 +47,37 @@ orchestrate/
 ├── README.md                          # Server documentation & setup guide
 ├── docs/
 │   ├── gherkin-scenarios.md           # BDD behavioral specifications
-│   └── mcp-server-design.md           # This architecture & design document
+│   ├── mcp-server-design.md           # This architecture & design document
+│   └── tdd-implementation-plan.md     # Test-driven development plan
 ├── src/
 │   └── orchestrator_mcp/
 │       ├── __init__.py                # Package exports & version
-│       ├── server.py                  # MCPServer instance, tool decorators & dispatch
+│       ├── agents.py                  # Dynamic OpenCode agent loader & registry
 │       ├── config.py                  # Workspace root resolution & .orchestrator directory
-│       ├── lock.py                    # SessionLockManager, atomic lock, stale PID cleanup
-│       ├── state.py                   # StateManager, session.json lifecycle, HMAC tamper check
-│       ├── verifier.py                # VerificationEngine (design, plan, execute, verify rules)
 │       ├── dag.py                     # DAGScheduler (batch grouping & file collision guard)
+│       ├── lock.py                    # SessionLockManager, atomic lock, stale PID cleanup
 │       ├── models.py                  # Pydantic models for structured tool inputs/outputs
 │       ├── prompts/                   # Phase Standard Operating Procedure (SOP) prompts
 │       │   ├── __init__.py            # Prompt router helper
+│       │   ├── complete.py            # COMPLETE phase summary SOP
 │       │   ├── design.py              # DESIGN phase SOP
-│       │   ├── plan.py                # PLAN phase SOP
 │       │   ├── execute.py             # EXECUTE phase SOP
-│       │   ├── verify.py              # VERIFY phase SOP
-│       │   └── complete.py            # COMPLETE phase summary SOP
-│       └── tools/                     # Modular tool handlers
-│           ├── __init__.py
-│           ├── init.py
-│           ├── status.py
-│           ├── approve.py
-│           ├── verify.py
-│           ├── archive.py
-│           └── dag.py
+│       │   ├── plan.py                # PLAN phase SOP
+│       │   └── verify.py              # VERIFY phase SOP
+│       ├── server.py                  # MCPServer instance, tool decorators & dispatch
+│       ├── state.py                   # StateManager, session.json lifecycle, HMAC tamper check
+│       └── verifier.py                # VerificationEngine (design, plan, execute, verify rules)
 └── tests/
     ├── conftest.py                    # Fixtures: isolated temporary workspace & git repo
-    ├── test_lock.py                   # Atomic lock, PID liveness & stale lock recovery
-    ├── test_state.py                  # HMAC calculation, tampering detection, transitions
-    ├── test_verifier.py               # Machine verification unit tests per phase
+    ├── test_agents.py                 # Dynamic agent discovery & persona unit tests
+    ├── test_bdd_scenarios.py          # pytest-bdd step definitions mapped to gherkin-scenarios.md
     ├── test_dag.py                    # DAG batching & file collision serialization
+    ├── test_lock.py                   # Atomic lock, PID liveness & stale lock recovery
+    ├── test_prompts.py                # Contract tests for all phase SOP invariants
+    ├── test_scaffolding.py            # Scaffolding & package exports tests
     ├── test_server.py                 # MCP tool invocation unit tests
-    └── test_bdd_scenarios.py          # pytest-bdd step definitions mapped to gherkin-scenarios.md
+    ├── test_state.py                  # HMAC calculation, tampering detection, transitions
+    └── test_verifier.py               # Machine verification unit tests per phase
 ```
 
 ---
@@ -170,6 +167,13 @@ All tools are registered on the `MCPServer` instance using `@mcp.tool()`. All to
   2. **File Collision Guard**: If multiple tasks target the same file path, automatically adds a sequential dependency so they run in successive batches.
   3. Computes topological execution batches where tasks in the same batch have zero unresolved dependencies.
   4. Returns ordered batches for parallel subagent execution.
+
+### 4.7 `orchestrate_get_agents`
+- **Parameters**: None
+- **Returns**: `AgentListResult`
+- **Behavior**:
+  1. Inspects `CONCRETE_AGENTS` registry.
+  2. Returns list of 12 specialized agent roles with their names, titles, and descriptions.
 
 ---
 

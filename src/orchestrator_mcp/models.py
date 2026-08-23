@@ -49,3 +49,15 @@ class DAGResult(BaseModel):
     batches: list[DAGBatch] = Field(default_factory=list)
     total_tasks: int = 0
     error: str | None = None
+
+
+class AgentSummary(BaseModel):
+    name: str
+    role: str
+    description: str
+
+
+class AgentListResult(BaseModel):
+    success: bool
+    agents: list[AgentSummary] = Field(default_factory=list)
+    error: str | None = None
