@@ -211,7 +211,7 @@ def orchestrate_get_dag_batches(workspace_root: str | None = None) -> DAGResult:
 
 @mcp.tool()
 def orchestrate_get_agents() -> AgentListResult:
-    """List all available specialized orchestrator agent personas and their roles."""
+    """List all specialized orchestrator agent personas. Each `name` is a registered OpenCode subagent ID, spawnable by name via the `subagent` tool even if hidden from the advertised subagent catalog."""
     summaries = [
         AgentSummary(name=name, role=info["role"], description=info["description"])
         for name, info in CONCRETE_AGENTS.items()

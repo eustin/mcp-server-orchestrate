@@ -47,6 +47,11 @@ For EVERY task in `.orchestrator/plan.md`:
 4. Spawn subagents batch by batch. Independent unblocked tasks within the same batch MUST run concurrently.
 5. Wait for all subagents in a batch to complete before moving to the next batch.
 
+#### Spawn-by-Name: Role IDs are Authoritative
+- Plan role IDs (`coder`, `debugger`, `tester`, `performance-engineer`, `implementation-reviewer`, and any other `Agent: <role>` in the plan) are registered OpenCode subagents. Spawn them by their EXACT ID via the `subagent` tool.
+- The `subagent` tool's "Available subagents:" list is a FILTERED projection — it excludes hidden agents, `mode: primary` agents, and permission-denied agents. It is NOT exhaustive and MUST NOT be used to infer which agents exist or are spawnable.
+- NEVER substitute `general` or `explore` for a plan role agent. Only fall back to `general` if the spawn fails with `Unknown agent: <role>` or a `ToolFailure` naming that agent.
+
 ### 3. Checkbox Management
 - Only mark `- [x]` in `.orchestrator/plan.md` AFTER the subagent reports verified successful completion.
 - Never mark a task complete without verified subagent output.
