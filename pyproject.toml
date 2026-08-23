@@ -1,0 +1,73 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "orchestrator-mcp"
+version = "0.1.0"
+description = "Python MCP Server port of OpenCode Orchestrator 4-phase workflow"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "mcp>=1.0.0",
+    "pydantic>=2.0.0",
+    "anyio>=4.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-bdd>=7.0.0",
+    "ruff>=0.4.0",
+    "mypy>=1.10.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-bdd>=7.0.0",
+    "ruff>=0.4.0",
+    "mypy>=1.10.0",
+]
+
+[project.scripts]
+orchestrator-mcp = "orchestrator_mcp.server:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/orchestrator_mcp"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+filterwarnings = [
+    "ignore::DeprecationWarning:gherkin.*",
+]
+markers = [
+    "lifecycle",
+    "lock",
+    "status",
+    "archive",
+    "security",
+    "anti-tamper: state tamper security tests",
+    "gates",
+    "approval",
+    "design",
+    "plan",
+    "execute",
+    "verify",
+    "dag",
+    "parallel",
+    "collision",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true

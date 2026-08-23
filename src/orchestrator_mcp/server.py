@@ -1,0 +1,182 @@
+from pathlib import Path
+
+from mcp.server.mcpserver import MCPServer
+
+from .config import resolve_workspace_root
+from .dag import DAGScheduler
+from .lock import LockError, SessionLockManager
+from .models import (
+    ApproveResult,
+    ArchiveResult,
+    DAGBatch,
+    DAGResult,
+    InitResult,
+    StatusResult,
+    VerifyResult,
+)
+from .prompts.complete import COMPLETE_PHASE_PROMPT
+from .prompts.design import DESIGN_PHASE_PROMPT
+from .prompts.execute import EXECUTE_PHASE_PROMPT
+from .prompts.plan import PLAN_PHASE_PROMPT
+from .prompts.verify import VERIFY_PHASE_PROMPT
+from .state import StateManager
+from .verifier import VerificationEngine
+
+mcp = MCPServer("orchestrator-mcp")
+
+
+def get_phase_prompt(phase: str) -> str:
+    prompts = {
+        "DESIGN": DESIGN_PHASE_PROMPT,
+        "PLAN": PLAN_PHASE_PROMPT,
+        "EXECUTE": EXECUTE_PHASE_PROMPT,
+        "VERIFY": VERIFY_PHASE_PROMPT,
+        "COMPLETE": COMPLETE_PHASE_PROMPT,
+    }
+    return prompts.get(phase, "")
+
+
+@mcp.tool()
+def orchestrate_init(task_description: str, workspace_root: str | None = None) -> InitResult:
+    """Initialize a new orchestration session with HMAC anti-tamper security."""
+    root = resolve_workspace_root(Path(workspace_root) if workspace_root else None)
+    lock_mgr = SessionLockManager(root)
+    state_mgr = StateManager(root)
+
+    try:
+        state = state_mgr.init_session(task_description)
+        lock_mgr.acquire_lock(state["session_id"])
+        mandates_file = root / ".orchestrator" / "project-mandates.md"
+        if not mandates_file.exists():
+            mandates_file.write_text(
+                "# Critical Project Mandates\n\nALL agents MUST obey these rules.\n"
+            )
+        return InitResult(
+            success=True,
+            session_id=state["session_id"],
+            phase="DESIGN",
+            sop_instructions=DESIGN_PHASE_PROMPT,
+        )
+    except LockError as e:
+        return InitResult(success=False, error=str(e))
+    except Exception as e:  # noqa: BLE001
+        return InitResult(success=False, error=f"Internal Error: {e!s}")
+
+
+@mcp.tool()
+def orchestrate_status(workspace_root: str | None = None) -> StatusResult:
+    """Query current session status and active phase."""
+    root = resolve_workspace_root(Path(workspace_root) if workspace_root else None)
+    state_mgr = StateManager(root)
+    state = state_mgr.load_state()
+    if not state:
+        return StatusResult(active_session=False, message="No active orchestration session")
+    return StatusResult(
+        active_session=True,
+        phase=state.get("current_phase"),
+        message="Active session in progress",
+    )
+
+
+@mcp.tool()
+def orchestrate_approve(workspace_root: str | None = None) -> ApproveResult:
+    """Grant human approval for the current phase deliverable."""
+    root = resolve_workspace_root(Path(workspace_root) if workspace_root else None)
+    state_mgr = StateManager(root)
+    state = state_mgr.load_state()
+    if not state:
+        return ApproveResult(success=False, error="No active session state found.")
+
+    updated = state_mgr.approve_current_phase()
+    phase = updated.get("current_phase")
+    return ApproveResult(
+        success=True,
+        phase=phase,
+        message=f"Phase '{phase}' approved by user. Machine verification is now enabled.",
+    )
+
+
+@mcp.tool()
+def orchestrate_verify(workspace_root: str | None = None) -> VerifyResult:
+    """Run machine verification on current phase deliverables and advance phase on success."""
+    root = resolve_workspace_root(Path(workspace_root) if workspace_root else None)
+    state_mgr = StateManager(root)
+    state = state_mgr.load_state()
+    if not state:
+        return VerifyResult(
+            success=False, phase="UNKNOWN", errors=["No active session state found."]
+        )
+
+    phase = state.get("current_phase", "DESIGN")
+    is_approved = state.get("current_phase_approved", False)
+    valid: bool = False
+    errors: list[str] = []
+
+    if phase == "DESIGN":
+        valid, errors = VerificationEngine.verify_design(root, is_approved=is_approved)
+        if valid:
+            state_mgr.update_phase("PLAN")
+    elif phase == "PLAN":
+        valid, errors = VerificationEngine.verify_plan(root, is_approved=is_approved)
+        if valid:
+            state_mgr.update_phase("EXECUTE")
+    elif phase == "EXECUTE":
+        valid, errors = VerificationEngine.verify_execution(root)
+        if valid:
+            state_mgr.update_phase("VERIFY")
+    elif phase == "VERIFY":
+        valid, errors = VerificationEngine.verify_testing(root)
+        if valid:
+            state_mgr.update_phase("COMPLETE")
+    else:
+        valid = True
+
+    new_state = state_mgr.load_state() if valid else state
+    new_phase = (new_state.get("current_phase") if new_state else phase) or "UNKNOWN"
+    return VerifyResult(
+        success=valid,
+        phase=new_phase,
+        previous_phase=phase if valid else None,
+        next_sop_instructions=get_phase_prompt(new_phase) if valid else None,
+        errors=errors,
+    )
+
+
+@mcp.tool()
+def orchestrate_archive(force: bool = True, workspace_root: str | None = None) -> ArchiveResult:
+    """Archive current orchestration deliverables and release session lock."""
+    root = resolve_workspace_root(Path(workspace_root) if workspace_root else None)
+    lock_mgr = SessionLockManager(root)
+    res = lock_mgr.force_archive()
+    archived_id = res.get("archived_session_id")
+    return ArchiveResult(
+        success=res.get("success", False),
+        archived_session_id=archived_id,
+        message=f"Session '{archived_id}' archived and lock released.",
+    )
+
+
+@mcp.tool()
+def orchestrate_get_dag_batches(workspace_root: str | None = None) -> DAGResult:
+    """Compute topological execution batches from plan.md tasks."""
+    root = resolve_workspace_root(Path(workspace_root) if workspace_root else None)
+    state_mgr = StateManager(root)
+    try:
+        tasks = state_mgr.parse_plan_tasks()
+        batches = DAGScheduler.build_execution_batches(tasks)
+        return DAGResult(
+            success=True,
+            batches=[DAGBatch(batch_number=i + 1, tasks=b) for i, b in enumerate(batches)],
+            total_tasks=len(tasks),
+        )
+    except Exception as e:  # noqa: BLE001
+        return DAGResult(success=False, error=str(e))
+
+
+def main() -> None:
+    """MCP Server entrypoint."""
+    mcp.run(transport="stdio")
+
+
+if __name__ == "__main__":
+    main()
