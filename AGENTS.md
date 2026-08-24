@@ -3,8 +3,8 @@
 ## Architecture & Project Overview
 Python MCP server port of the OpenCode Orchestrator 4-phase machine-verified workflow (**DESIGN → PLAN → EXECUTE → VERIFY → COMPLETE**). Exposes deterministic MCP tools over stdio to enforce human approval gates, state integrity, AST/regex deliverable verification, and DAG task scheduling.
 
-- **Behavioral Source of Truth**: `docs/gherkin-scenarios.md` (18 BDD scenarios)
-- **Architecture & Tool Specs**: `docs/mcp-server-design.md`
+- **Behavioral Source of Truth**: `tests/features/orchestrator.feature` (18 BDD scenarios)
+- **Package Root**: `src/orchestrator_mcp/`
 - **Package Root**: `src/orchestrator_mcp/`
 
 ## Commands & Toolchain
