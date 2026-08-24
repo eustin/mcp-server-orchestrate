@@ -49,7 +49,7 @@ uv run python -m orchestrator_mcp.server
 
 4. **Phase Deliverables & Verification**:
    - **DESIGN**: `.orchestrator/design.md` with `## Requirements`, `## Architecture`, `## Self-Confidence Audit`.
-   - **PLAN**: `.orchestrator/plan.md` with `## Tasks`, `## Detailed Task Specifications`, `## Verification`. Tasks require `(Agent: <role>)`, `(Target: <path>)`, `(blocked_by: [<deps>])`. Final barrier task MUST be `Agent: implementation-reviewer`. `Test command: <cmd>` cannot be "None" or empty.
+   - **PLAN**: `.orchestrator/plan.md` with `## Tasks`, `## Detailed Task Specifications`, `## Verification`. Tasks require `(Agent: <role>, Target: <path>, blocked_by: [<deps>])`. Final barrier task MUST be `Agent: implementation-reviewer`. `Test command: <cmd>` cannot be "None" or empty.
    - **EXECUTE**: All plan tasks must be marked `- [x]`. Target files must exist and be > 0 bytes.
    - **VERIFY**: Subprocess test runner executes test command (120s timeout, exit code 0).
 

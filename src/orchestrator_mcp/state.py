@@ -135,19 +135,19 @@ class StateManager:
 
             # Extract Target
             target = None
-            m_target = re.search(r"\(Target:\s*([^)]+)\)", line_str)
+            m_target = re.search(r"(?:, |\()Target:\s*([^,)]+)", line_str)
             if m_target:
                 target = m_target.group(1).strip()
 
             # Extract Agent
             agent = None
-            m_agent = re.search(r"\(Agent:\s*([^)]+)\)", line_str)
+            m_agent = re.search(r"\(Agent:\s*([^),]+)", line_str)
             if m_agent:
                 agent = m_agent.group(1).strip()
 
             # Extract blocked_by list
             blocked_by: list[str] = []
-            m_blocked = re.search(r"\(blocked_by:\s*\[(.*?)\]\)", line_str)
+            m_blocked = re.search(r"(?:, |\()blocked_by:\s*\[([^\]]*)\]", line_str)
             if m_blocked:
                 raw_deps = m_blocked.group(1).strip()
                 if raw_deps:

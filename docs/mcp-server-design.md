@@ -131,7 +131,7 @@ All tools are registered on the `MCPServer` instance using `@mcp.tool()`. All to
   3. **PLAN**:
      - Deliverable: `.orchestrator/plan.md`.
      - Checks: File exists, human approval == True, contains `## Tasks`, `## Detailed Task Specifications`, `## Verification`.
-     - Task items: At least 1 checkbox, each containing `(Agent: <role>)`, `(Target: <path>)`, `(blocked_by: [<deps>])`.
+     - Task items: At least 1 checkbox, each containing `(Agent: <role>, Target: <path>, blocked_by: [<deps>])`.
      - Specification sections: Each task ID has a matching `### <task_id>` section.
      - Final barrier: Last task must be `Agent: implementation-reviewer` blocked by all preceding tasks.
      - Test command: Valid non-empty test command under `## Verification` (not "None").

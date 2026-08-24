@@ -61,7 +61,7 @@ Machine-verified 4-phase workflow MCP server for AI coding assistants. Enforces 
 
 2. **PLAN Phase**:
    - Deliverable: `.orchestrator/plan.md`
-   - Tasks Schema: `- [ ] **<id>**: <desc> (Agent: <role>) (Target: <file>) (blocked_by: [<deps>])`
+   - Tasks Schema: `- [ ] **<id>**: <desc> (Agent: <role>, Target: <file>, blocked_by: [<deps>])`
    - Detailed Specs: `### <id>` section for every task.
    - Final Barrier: Final task MUST be assigned to `Agent: implementation-reviewer` blocked by all prior tasks.
    - Test Command: Valid executable `Test command: <cmd>` under `## Verification`.

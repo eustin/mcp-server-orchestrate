@@ -656,7 +656,7 @@ def all_target_files_exist(temp_workspace: Path) -> None:
     plan_file = temp_workspace / ".orchestrator" / "plan.md"
     if plan_file.exists():
         content = plan_file.read_text()
-        matches = re.findall(r"\(Target:\s*([^)]+)\)", content)
+        matches = re.findall(r"(?:, |\()Target:\s*([^,)]+)", content)
         for target in matches:
             tpath = temp_workspace / target.strip()
             tpath.parent.mkdir(parents=True, exist_ok=True)

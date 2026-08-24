@@ -374,6 +374,71 @@ Test command: true
     assert res.batches[1].tasks[0]["id"] == "task-3"
 
 
+def test_orchestrate_get_dag_batches_canonical_format(temp_workspace: Path) -> None:
+    orchestrate_init("Canonical DAG Test", workspace_root=str(temp_workspace))
+    plan_file = temp_workspace / ".orchestrator" / "plan.md"
+    plan_file.write_text("""## Tasks
+- [ ] **T1**: do A (Agent: coder, Target: src/a.py, blocked_by: [])
+- [ ] **T2**: do B (Agent: coder, Target: src/b.py, blocked_by: [T1])
+- [ ] **T3**: do C (Agent: implementation-reviewer, Target: src/c.py, blocked_by: [T1, T2])
+
+## Detailed Task Specifications
+### T1
+### T2
+### T3
+
+## Verification
+Test command: true
+""")
+
+    res = orchestrate_get_dag_batches(workspace_root=str(temp_workspace))
+    assert isinstance(res, DAGResult)
+    assert res.success is True
+    assert res.total_tasks == 3
+    assert len(res.batches) == 3
+    assert len(res.batches[0].tasks) == 1
+    assert res.batches[0].tasks[0]["id"] == "T1"
+    assert res.batches[0].tasks[0]["target"] == "src/a.py"
+    assert res.batches[0].tasks[0]["agent"] == "coder"
+    assert res.batches[0].tasks[0]["blocked_by"] == []
+
+    assert len(res.batches[1].tasks) == 1
+    assert res.batches[1].tasks[0]["id"] == "T2"
+    assert res.batches[1].tasks[0]["target"] == "src/b.py"
+    assert res.batches[1].tasks[0]["agent"] == "coder"
+    assert res.batches[1].tasks[0]["blocked_by"] == ["T1"]
+
+    assert len(res.batches[2].tasks) == 1
+    assert res.batches[2].tasks[0]["id"] == "T3"
+    assert res.batches[2].tasks[0]["target"] == "src/c.py"
+    assert res.batches[2].tasks[0]["agent"] == "implementation-reviewer"
+    assert res.batches[2].tasks[0]["blocked_by"] == ["T1", "T2"]
+
+
+def test_orchestrate_get_dag_batches_canonical_collision_guard(temp_workspace: Path) -> None:
+    orchestrate_init("Collision Guard Test", workspace_root=str(temp_workspace))
+    plan_file = temp_workspace / ".orchestrator" / "plan.md"
+    plan_file.write_text("""## Tasks
+- [ ] **T1**: Step 1 (Agent: coder, Target: src/auth.py, blocked_by: [])
+- [ ] **T2**: Step 2 (Agent: coder, Target: src/auth.py, blocked_by: [])
+
+## Detailed Task Specifications
+### T1
+### T2
+
+## Verification
+Test command: true
+""")
+
+    res = orchestrate_get_dag_batches(workspace_root=str(temp_workspace))
+    assert isinstance(res, DAGResult)
+    assert res.success is True
+    assert res.total_tasks == 2
+    assert len(res.batches) == 2
+    assert [t["id"] for t in res.batches[0].tasks] == ["T1"]
+    assert [t["id"] for t in res.batches[1].tasks] == ["T2"]
+
+
 def test_main_invokes_mcp_run() -> None:
     with patch("orchestrator_mcp.server.mcp.run") as mock_run:
         main()

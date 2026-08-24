@@ -82,3 +82,48 @@ def test_parse_plan_tasks(temp_workspace: Path) -> None:
     assert tasks[1]["agent"] == "coder"
     assert tasks[1]["target"] == "src/auth.py"
     assert tasks[1]["blocked_by"] == ["T1"]
+
+
+def test_parse_plan_tasks_canonical_format(temp_workspace: Path) -> None:
+    mgr = StateManager(temp_workspace)
+    plan_file = temp_workspace / ".orchestrator" / "plan.md"
+    plan_file.write_text(
+        "## Tasks\n"
+        "- [ ] **T1**: do A (Agent: coder, Target: src/a.py, blocked_by: [])\n"
+        "- [ ] **T2**: do B (Agent: coder, Target: src/b.py, blocked_by: [T1, T2])\n"
+        "- [x] **T3**: do C (Agent: implementation-reviewer, Target: src/c.py, blocked_by: [T1, T2])\n"
+    )
+
+    tasks = mgr.parse_plan_tasks()
+    assert len(tasks) == 3
+    assert tasks[0]["id"] == "T1"
+    assert tasks[0]["agent"] == "coder"
+    assert tasks[0]["target"] == "src/a.py"
+    assert tasks[0]["blocked_by"] == []
+
+    assert tasks[1]["id"] == "T2"
+    assert tasks[1]["agent"] == "coder"
+    assert tasks[1]["target"] == "src/b.py"
+    assert tasks[1]["blocked_by"] == ["T1", "T2"]
+
+    assert tasks[2]["id"] == "T3"
+    assert tasks[2]["checked"] is True
+    assert tasks[2]["agent"] == "implementation-reviewer"
+    assert tasks[2]["target"] == "src/c.py"
+    assert tasks[2]["blocked_by"] == ["T1", "T2"]
+
+
+def test_parse_plan_tasks_prose_no_false_positive(temp_workspace: Path) -> None:
+    mgr = StateManager(temp_workspace)
+    plan_file = temp_workspace / ".orchestrator" / "plan.md"
+    plan_file.write_text(
+        "## Tasks\n"
+        "- [ ] **T5**: don't use blocked_by: [X] here (Agent: coder, Target: src/e.py, blocked_by: [T1])\n"
+    )
+
+    tasks = mgr.parse_plan_tasks()
+    assert len(tasks) == 1
+    assert tasks[0]["id"] == "T5"
+    assert tasks[0]["agent"] == "coder"
+    assert tasks[0]["target"] == "src/e.py"
+    assert tasks[0]["blocked_by"] == ["T1"]

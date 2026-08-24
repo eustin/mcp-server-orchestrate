@@ -179,6 +179,38 @@ def test_verify_execution_success(temp_workspace: Path) -> None:
     assert len(errors) == 0
 
 
+def test_verify_execution_canonical_missing_target_file(temp_workspace: Path) -> None:
+    plan = "## Tasks\n- [x] **T1**: Done (Agent: coder, Target: src/missing.py, blocked_by: [])\n"
+    (temp_workspace / ".orchestrator" / "plan.md").write_text(plan)
+    valid, errors = VerificationEngine.verify_execution(temp_workspace)
+    assert valid is False
+    assert any("does not exist" in e for e in errors)
+
+
+def test_verify_execution_canonical_zero_byte_target_file(temp_workspace: Path) -> None:
+    plan = "## Tasks\n- [x] **T1**: Done (Agent: coder, Target: src/empty.py, blocked_by: [])\n"
+    (temp_workspace / ".orchestrator" / "plan.md").write_text(plan)
+    target = temp_workspace / "src" / "empty.py"
+    target.parent.mkdir(parents=True)
+    target.touch()
+
+    valid, errors = VerificationEngine.verify_execution(temp_workspace)
+    assert valid is False
+    assert any("is 0 bytes" in e for e in errors)
+
+
+def test_verify_execution_canonical_success(temp_workspace: Path) -> None:
+    plan = "## Tasks\n- [x] **T1**: Done (Agent: coder, Target: src/main.py, blocked_by: [])\n"
+    (temp_workspace / ".orchestrator" / "plan.md").write_text(plan)
+    target = temp_workspace / "src" / "main.py"
+    target.parent.mkdir(parents=True)
+    target.write_text("print('hello')")
+
+    valid, errors = VerificationEngine.verify_execution(temp_workspace)
+    assert valid is True
+    assert len(errors) == 0
+
+
 def test_verify_testing_command_failure(temp_workspace: Path) -> None:
     plan = "## Verification\nTest command: exit 1\n"
     (temp_workspace / ".orchestrator" / "plan.md").write_text(plan)
@@ -193,3 +225,53 @@ def test_verify_testing_command_success(temp_workspace: Path) -> None:
     valid, errors = VerificationEngine.verify_testing(temp_workspace)
     assert valid is True
     assert len(errors) == 0
+
+
+def test_verify_testing_ignores_task_spec_self_verification_bullet(temp_workspace: Path) -> None:
+    plan = (
+        "## Tasks\n"
+        "- [ ] **T1**: task 1 (Agent: coder, Target: a.py, blocked_by: [])\n"
+        "## Detailed Task Specifications\n"
+        "### T1\n"
+        "- **Test command for self-verification**: `exit 2`\n"
+        "- **Test command for T1**: `exit 2`\n"
+        "## Verification\n"
+        "Test command: exit 0\n"
+    )
+    (temp_workspace / ".orchestrator" / "plan.md").write_text(plan)
+    valid, errors = VerificationEngine.verify_testing(temp_workspace)
+    assert valid is True
+    assert len(errors) == 0
+
+
+def test_verify_testing_various_markdown_formats(temp_workspace: Path) -> None:
+    formats = [
+        "## Verification\n**Test command**: exit 0\n",
+        "## Verification\n**Test command:** exit 0\n",
+        "## Verification\n- **Test command**: `exit 0`\n",
+        "## Verification\n- **Test command:** `exit 0`\n",
+        "## Verification\nTest command: `exit 0`\n",
+    ]
+    for p in formats:
+        (temp_workspace / ".orchestrator" / "plan.md").write_text(p)
+        valid, errors = VerificationEngine.verify_testing(temp_workspace)
+        assert valid is True, f"Failed for format: {p}"
+        assert len(errors) == 0
+
+
+def test_verify_plan_rejects_task_spec_bullet_without_verification_command(temp_workspace: Path) -> None:
+    plan = (
+        "## Tasks\n"
+        "- [ ] **T1**: Code (Agent: coder, Target: a.py, blocked_by: [])\n"
+        "- [ ] **T2**: Review (Agent: implementation-reviewer, Target: a.py, blocked_by: [T1])\n"
+        "## Detailed Task Specifications\n"
+        "### T1\n"
+        "- **Test command for self-verification**: `pytest tests/`\n"
+        "### T2\n"
+        "Review spec\n"
+        "## Verification\n"
+    )
+    (temp_workspace / ".orchestrator" / "plan.md").write_text(plan)
+    valid, errors = VerificationEngine.verify_plan(temp_workspace, is_approved=True)
+    assert valid is False
+    assert any("missing required 'Test command: <cmd>'" in e for e in errors)

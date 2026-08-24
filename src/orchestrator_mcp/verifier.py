@@ -5,7 +5,7 @@ from pathlib import Path
 from .config import get_orchestrator_dir, resolve_workspace_root
 
 TEST_COMMAND_REGEX = re.compile(
-    r"^\s*(?:-\s*)?(?:\*\*)?Test command:?(?:\*\*)?:?\s*(.+)$",
+    r"^\s*(?:-\s*)?(?:\*\*)?Test command(?:\*\*)?\s*:\s*(?:\*\*)?\s*(.+)$",
     re.MULTILINE | re.IGNORECASE,
 )
 
@@ -92,7 +92,8 @@ class VerificationEngine:
                 "Final task MUST be blocked by all preceding tasks. 'blocked_by: []' is invalid."
             )
 
-        match = TEST_COMMAND_REGEX.search(content)
+        target_text = content.split("## Verification", 1)[1] if "## Verification" in content else content
+        match = TEST_COMMAND_REGEX.search(target_text)
         if not match:
             errors.append(
                 "Plan Document missing required 'Test command: <cmd>' under '## Verification'."
@@ -126,7 +127,7 @@ class VerificationEngine:
         for line in content.splitlines():
             line_str = line.strip()
             if line_str.startswith(("- [x]", "- [X]")):
-                m_target = re.search(r"\(Target:\s*([^)]+?)\)", line_str)
+                m_target = re.search(r"(?:, |\()Target:\s*([^,)]+)", line_str)
                 if m_target:
                     target_clean = m_target.group(1).strip()
                     file_path = root / target_clean
@@ -145,7 +146,8 @@ class VerificationEngine:
             return False, ["Missing plan file for verification."]
 
         content = plan_file.read_text()
-        match = TEST_COMMAND_REGEX.search(content)
+        target_text = content.split("## Verification", 1)[1] if "## Verification" in content else content
+        match = TEST_COMMAND_REGEX.search(target_text)
         if not match:
             return False, [
                 "Missing required 'Test command: <cmd>' under '## Verification' in plan.md."
