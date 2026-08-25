@@ -1,16 +1,17 @@
 # AGENTS.md — Orchestrate MCP Server
 
 ## Architecture & Project Overview
-Python MCP server port of the OpenCode Orchestrate 4-phase machine-verified workflow (**DESIGN → PLAN → EXECUTE → VERIFY → COMPLETE**). Exposes deterministic MCP tools over stdio to enforce human approval gates, state integrity, AST/regex deliverable verification, and DAG task scheduling.
+Python MCP server implementing the OpenCode Orchestrate 4-phase machine-verified workflow (**DESIGN → PLAN → EXECUTE → VERIFY → COMPLETE**). Exposes deterministic MCP tools over stdio to enforce human approval gates, state integrity, AST/regex deliverable verification, and DAG task scheduling.
 
 - **Behavioral Source of Truth**: `tests/features/orchestrate.feature` (26 BDD scenarios)
 - **Package Root**: `src/orchestrate_mcp/`
+- **MCP Server Entrypoint**: `orchestrate_mcp.server:main` (FastMCP via `mcp.server.mcpserver.MCPServer("orchestrate-mcp")`)
 
 ## Commands & Toolchain
 Uses `uv` for Python package and environment management (Python >= 3.11).
 
 ```bash
-# Install dependencies
+# Install / sync dependencies
 uv sync
 
 # Run test suite (BDD + Unit)
@@ -34,11 +35,12 @@ uv run python -m orchestrate_mcp.server
 1. **State File Integrity**:
    - Internal state file is `.orchestrator/session.json`.
    - Corrupted or unparseable state file raises `StateCorruptError`.
+   - Runtime state lives under `.orchestrator/` in the resolved workspace root (found by looking upward for `.git` or `.opencode`).
 
 2. **Atomic Session Locking**:
    - Lock file is `.orchestrator/session.lock`.
    - MUST be acquired atomically with `os.open(..., os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o444)`.
-   - Automatically clean up stale locks if creator PID is no longer alive (`os.kill(pid, 0)`).
+   - Stale locks from terminated processes (`os.kill(pid, 0)` fails) are automatically reclaimed.
 
 3. **Human Approval Gates**:
    - `orchestrate_approve` MUST set `current_phase_approved = true`.
@@ -49,7 +51,7 @@ uv run python -m orchestrate_mcp.server
    - **DESIGN**: `.orchestrator/design.md` with `## Requirements`, `## Architecture`, `## Self-Confidence Audit`.
    - **PLAN**: `.orchestrator/plan.md` with `## Tasks`, `## Detailed Task Specifications`, `## Verification`. Tasks require `(Agent: <role>, Target: <path>, blocked_by: [<deps>])`. Final barrier task MUST be `Agent: implementation-reviewer`. `Test command: <cmd>` cannot be "None" or empty.
    - **EXECUTE**: All plan tasks must be marked `- [x]`. Target files must exist and be > 0 bytes.
-   - **VERIFY**: Subprocess test runner executes test command (120s timeout, exit code 0).
+   - **VERIFY**: Subprocess test runner executes test command from plan (120s timeout, exit code 0).
 
 5. **DAG Scheduling & Collision Guard**:
    - If multiple tasks share identical target file paths, `DAGScheduler` MUST serialize them sequentially across distinct batches to prevent merge collisions.
