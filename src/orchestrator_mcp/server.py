@@ -53,7 +53,7 @@ def get_phase_prompt(phase: str) -> str:
 
 @mcp.tool()
 def orchestrate_init(task_description: str, workspace_root: str | None = None) -> InitResult:
-    """Initialize a new orchestration session with HMAC anti-tamper security."""
+    """Initialize a new orchestration session."""
     root = resolve_workspace_root(Path(workspace_root) if workspace_root else None)
     lock_mgr = SessionLockManager(root)
     state_mgr = StateManager(root)

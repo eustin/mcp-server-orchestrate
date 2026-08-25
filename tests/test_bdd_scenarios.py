@@ -28,7 +28,7 @@ from orchestrator_mcp.server import (
     orchestrate_status,
     orchestrate_verify,
 )
-from orchestrator_mcp.state import StateManager, StateTamperError
+from orchestrator_mcp.state import StateManager
 
 # Register all scenarios from features/orchestrator.feature
 scenarios("features/orchestrator.feature")
@@ -149,28 +149,6 @@ def client_calls_orchestrate_archive(
     context["last_result"] = res
 
 
-@when('file ".orchestrator/session.json" is modified without updating HMAC')
-def tamper_with_session_json(temp_workspace: Path) -> None:
-    session_file = temp_workspace / ".orchestrator" / "session.json"
-    data = json.loads(session_file.read_text())
-    data["task_description"] = "TAMPERED VALUE WITHOUT HMAC UPDATE"
-    session_file.write_text(json.dumps(data, indent=2))
-
-
-@when(
-    parsers.parse(
-        'client calls any orchestrator tool ("orchestrate_status", "orchestrate_verify", "orchestrate_approve")'
-    )
-)
-def client_calls_any_tool_on_tampered_state(temp_workspace: Path, context: dict[str, Any]) -> None:
-    try:
-        orchestrate_status(workspace_root=str(temp_workspace))
-    except StateTamperError as e:
-        context["last_error"] = e
-    except Exception as e:  # noqa: BLE001
-        context["last_error"] = e
-
-
 @when('client calls tool "orchestrate_approve"')
 def client_calls_orchestrate_approve(temp_workspace: Path, context: dict[str, Any]) -> None:
     res = orchestrate_approve(workspace_root=str(temp_workspace))
@@ -214,14 +192,6 @@ def verify_state_file_contents(
             assert data.get(field) is True
         else:
             assert data.get(field) == expected
-
-
-@then(parsers.parse('state file includes valid SHA256 HMAC signature in "{hmac_field}"'))
-def verify_state_hmac_valid(temp_workspace: Path, hmac_field: str) -> None:
-    mgr = StateManager(temp_workspace)
-    state = mgr.load_state()
-    assert state is not None
-    assert hmac_field in state
 
 
 @then(parsers.parse('server creates default "{mandates_path}" if not present'))
@@ -310,18 +280,6 @@ def verify_archive_confirmation(context: dict[str, Any]) -> None:
     assert res.success is True
     assert res.message is not None
     assert "archived and lock released" in res.message
-
-
-# ==============================================================================
-# STATE INTEGRITY & ANTI-TAMPER THEN STEPS
-# ==============================================================================
-
-
-@then("tool execution fails with StateTamperError:")
-def verify_state_tamper_error_raised(context: dict[str, Any], docstring: str) -> None:
-    err = context.get("last_error")
-    assert isinstance(err, StateTamperError)
-    assert docstring.strip() in str(err)
 
 
 # ==============================================================================

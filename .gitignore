@@ -33,10 +33,7 @@ dist/
 *~
 
 # Orchestrator session runtime state & deliverables (in local workspace)
-.orchestrator/session.*
-.orchestrator/archive/
-.orchestrator/design.md
-.orchestrator/plan.md
+.orchestrator/
 
 # Serena local tool directory
 .serena/

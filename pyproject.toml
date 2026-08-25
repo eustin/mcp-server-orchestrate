@@ -50,7 +50,6 @@ markers = [
     "status",
     "archive",
     "security",
-    "anti-tamper: state tamper security tests",
     "gates",
     "approval",
     "design",

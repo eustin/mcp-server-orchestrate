@@ -1,9 +1,8 @@
-import json
 from pathlib import Path
 
 import pytest
 
-from orchestrator_mcp.state import StateManager, StateTamperError
+from orchestrator_mcp.state import StateCorruptError, StateManager
 
 
 def test_init_session(temp_workspace: Path) -> None:
@@ -14,30 +13,17 @@ def test_init_session(temp_workspace: Path) -> None:
     assert state["current_phase_approved"] is False
     assert state["task_description"] == "Add JWT Authentication"
     assert "session_id" in state
-    assert "_hmac" in state
     assert (temp_workspace / ".orchestrator" / "session.json").exists()
 
 
-def test_hmac_calculation_and_verification(temp_workspace: Path) -> None:
+def test_state_corruption_detection(temp_workspace: Path) -> None:
     mgr = StateManager(temp_workspace)
-    state = mgr.init_session("Test Task")
-    loaded = mgr.load_state()
-
-    assert loaded is not None
-    assert loaded["session_id"] == state["session_id"]
-    assert loaded["_hmac"] == mgr.calculate_hmac(loaded)
-
-
-def test_state_tampering_detection(temp_workspace: Path) -> None:
-    mgr = StateManager(temp_workspace)
-    mgr.init_session("Tamper Test")
+    mgr.init_session("Corrupt Test")
 
     state_file = temp_workspace / ".orchestrator" / "session.json"
-    data = json.loads(state_file.read_text())
-    data["current_phase"] = "PLAN"  # Direct manual tampering without HMAC update
-    state_file.write_text(json.dumps(data))
+    state_file.write_text("{ not valid json ")
 
-    with pytest.raises(StateTamperError, match="TAMPERING DETECTED"):
+    with pytest.raises(StateCorruptError, match="Corrupted state file"):
         mgr.load_state()
 
 

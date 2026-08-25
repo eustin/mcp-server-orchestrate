@@ -32,10 +32,9 @@ uv run python -m orchestrator_mcp.server
 
 ## Critical Invariants & Rules
 
-1. **State Anti-Tamper**:
+1. **State File Integrity**:
    - Internal state file is `.orchestrator/session.json`.
-   - All state mutations MUST compute and update the SHA256 HMAC signature using secret key `b"opencode-orchestrator-anti-tamper-key"`.
-   - Modifying state without updating `_hmac` triggers `StateTamperError`.
+   - Corrupted or unparseable state file raises `StateCorruptError`.
 
 2. **Atomic Session Locking**:
    - Lock file is `.orchestrator/session.lock`.

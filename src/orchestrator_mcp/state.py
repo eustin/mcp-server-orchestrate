@@ -1,5 +1,3 @@
-import hashlib
-import hmac
 import json
 import re
 from datetime import UTC, datetime
@@ -8,11 +6,9 @@ from typing import Any, ClassVar
 
 from .config import get_orchestrator_dir
 
-SECRET_KEY = b"opencode-orchestrator-anti-tamper-key"
 
-
-class StateTamperError(Exception):
-    """Raised when internal session state tampering is detected."""
+class StateCorruptError(Exception):
+    """Raised when the internal session state file is corrupted or unparseable."""
 
 
 class StateManager:
@@ -24,19 +20,13 @@ class StateManager:
         self.plan_file = self.orch_dir / "plan.md"
         self.design_file = self.orch_dir / "design.md"
 
-    def calculate_hmac(self, data_dict: dict[str, Any]) -> str:
-        """Calculate HMAC-SHA256 signature for state dictionary, excluding existing _hmac."""
-        clean = {k: v for k, v in data_dict.items() if k != "_hmac"}
-        serialized = json.dumps(clean, sort_keys=True)
-        return hmac.new(SECRET_KEY, serialized.encode("utf-8"), hashlib.sha256).hexdigest()
-
     def generate_session_id(self, task_description: str) -> str:
         """Generate a deterministic slugified session ID."""
         slug = re.sub(r"[^a-z0-9]+", "-", task_description.lower()).strip("-")[:30]
         return f"{datetime.now(UTC).strftime('%Y-%m-%d')}-{slug}"
 
     def init_session(self, task_description: str, session_id: str | None = None) -> dict[str, Any]:
-        """Initialize a new orchestration session with HMAC anti-tamper signature."""
+        """Initialize a new orchestration session."""
         sid = session_id or self.generate_session_id(task_description)
         state: dict[str, Any] = {
             "session_id": sid,
@@ -52,27 +42,21 @@ class StateManager:
                 }
             ],
         }
-        state["_hmac"] = self.calculate_hmac(state)
         self.state_file.write_text(json.dumps(state, indent=2))
         return state
 
     def load_state(self) -> dict[str, Any] | None:
-        """Load session state and verify HMAC signature. Raises StateTamperError if tampered."""
+        """Load session state. Raises StateCorruptError if the file is corrupted."""
         if not self.state_file.exists():
             return None
         try:
             data: dict[str, Any] = json.loads(self.state_file.read_text())
-            if data.get("_hmac") != self.calculate_hmac(data):
-                raise StateTamperError(
-                    "TAMPERING DETECTED: Internal state file session.json was manually modified."
-                )
             return data
         except json.JSONDecodeError as err:
-            raise StateTamperError("Corrupted state file session.json.") from err
+            raise StateCorruptError("Corrupted state file session.json.") from err
 
     def save_state(self, state: dict[str, Any]) -> None:
-        """Sign and save state dictionary to session.json."""
-        state["_hmac"] = self.calculate_hmac(state)
+        """Save state dictionary to session.json."""
         self.state_file.write_text(json.dumps(state, indent=2))
 
     def approve_current_phase(self) -> dict[str, Any]:

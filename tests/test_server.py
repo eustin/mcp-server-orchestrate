@@ -30,7 +30,7 @@ from orchestrator_mcp.server import (
     orchestrate_status,
     orchestrate_verify,
 )
-from orchestrator_mcp.state import StateManager, StateTamperError
+from orchestrator_mcp.state import StateCorruptError, StateManager
 
 
 def test_get_phase_prompt() -> None:
@@ -161,37 +161,13 @@ def test_orchestrate_status_active_session(temp_workspace: Path) -> None:
     assert res.phase == "DESIGN"
 
 
-def test_orchestrate_status_tampered_state_surfaces_error(temp_workspace: Path) -> None:
-    orchestrate_init("Tamper Test", workspace_root=str(temp_workspace))
+def test_orchestrate_status_corrupt_state_surfaces_error(temp_workspace: Path) -> None:
+    orchestrate_init("Corrupt Test", workspace_root=str(temp_workspace))
     state_file = temp_workspace / ".orchestrator" / "session.json"
-    data = json.loads(state_file.read_text())
-    data["current_phase"] = "EXECUTE"
-    state_file.write_text(json.dumps(data, indent=2))
+    state_file.write_text("{ not valid json ")
 
-    with pytest.raises(StateTamperError):
+    with pytest.raises(StateCorruptError):
         orchestrate_status(workspace_root=str(temp_workspace))
-
-
-def test_orchestrate_approve_surfaces_tamper_error(temp_workspace: Path) -> None:
-    orchestrate_init("Tamper Approve Test", workspace_root=str(temp_workspace))
-    state_file = temp_workspace / ".orchestrator" / "session.json"
-    data = json.loads(state_file.read_text())
-    data["task_description"] = "Illegally Tampered Task"
-    state_file.write_text(json.dumps(data, indent=2))
-
-    with pytest.raises(StateTamperError):
-        orchestrate_approve(workspace_root=str(temp_workspace))
-
-
-def test_orchestrate_verify_surfaces_tamper_error(temp_workspace: Path) -> None:
-    orchestrate_init("Tamper Verify Test", workspace_root=str(temp_workspace))
-    state_file = temp_workspace / ".orchestrator" / "session.json"
-    data = json.loads(state_file.read_text())
-    data["current_phase"] = "EXECUTE"
-    state_file.write_text(json.dumps(data, indent=2))
-
-    with pytest.raises(StateTamperError):
-        orchestrate_verify(workspace_root=str(temp_workspace))
 
 
 def test_orchestrate_approve_no_session(temp_workspace: Path) -> None:

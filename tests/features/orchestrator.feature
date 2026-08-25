@@ -22,7 +22,6 @@ Feature: Orchestrator MCP Server Lifecycle and Gate Enforcement
       | current_phase          | DESIGN                 |
       | current_phase_approved | false                  |
       | task_description       | Add JWT Authentication |
-    And state file includes valid SHA256 HMAC signature in "_hmac"
     And server creates default ".orchestrator/project-mandates.md" if not present
     And tool output returns session ID, phase "DESIGN", and DESIGN phase SOP instructions
 
@@ -87,21 +86,7 @@ Feature: Orchestrator MCP Server Lifecycle and Gate Enforcement
     And tool output confirms session archived and lock released
 
   # ============================================================================
-  # 2. STATE INTEGRITY & ANTI-TAMPER SECURITY
-  # ============================================================================
-
-  @security @anti-tamper
-  Scenario: Reject corrupted or manually modified session state
-    Given an active orchestration session
-    When file ".orchestrator/session.json" is modified without updating HMAC
-    And client calls any orchestrator tool ("orchestrate_status", "orchestrate_verify", "orchestrate_approve")
-    Then tool execution fails with StateTamperError:
-      """
-      TAMPERING DETECTED: Internal state file session.json was manually modified.
-      """
-
-  # ============================================================================
-  # 3. HUMAN APPROVAL GATE
+  # 2. HUMAN APPROVAL GATE
   # ============================================================================
 
   @gates @approval
@@ -119,7 +104,7 @@ Feature: Orchestrator MCP Server Lifecycle and Gate Enforcement
     Then tool returns error "No active session state found."
 
   # ============================================================================
-  # 4. PHASE VERIFICATION & TRANSITIONS
+  # 3. PHASE VERIFICATION & TRANSITIONS
   # ============================================================================
 
   # --- DESIGN PHASE ---
@@ -279,7 +264,7 @@ Feature: Orchestrator MCP Server Lifecycle and Gate Enforcement
     And tool output returns COMPLETE phase summary and archive prompt
 
   # ============================================================================
-  # 5. DAG TASK SCHEDULING & FILE COLLISION GUARD
+  # 4. DAG TASK SCHEDULING & FILE COLLISION GUARD
   # ============================================================================
 
   @dag @parallel
