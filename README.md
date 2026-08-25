@@ -1,4 +1,4 @@
-# Orchestrator Python MCP Server
+# Orchestrate Python MCP Server
 
 Machine-verified 4-phase workflow MCP server for AI coding assistants. Enforces **DESIGN → PLAN → EXECUTE → VERIFY → COMPLETE** with human approval gates, state integrity checks, and DAG task scheduling.
 
@@ -84,11 +84,11 @@ Machine-verified 4-phase workflow MCP server for AI coding assistants. Enforces 
 # Sync environment
 uv sync
 
-# Run tests (Unit + 18 BDD Scenarios)
+# Run tests (Unit + 26 BDD Scenarios)
 uv run pytest
 
 # Start MCP server (stdio transport)
-uv run python -m orchestrator_mcp.server
+uv run python -m orchestrate_mcp.server
 ```
 
 ### OpenCode MCP Configuration (`opencode.json`)
@@ -96,9 +96,9 @@ uv run python -m orchestrator_mcp.server
 ```json
 {
   "mcpServers": {
-    "orchestrator": {
+    "orchestrate": {
       "command": "uv",
-      "args": ["run", "--directory", "/path/to/orchestrate", "python", "-m", "orchestrator_mcp.server"]
+      "args": ["run", "--directory", "/path/to/orchestrate", "python", "-m", "orchestrate_mcp.server"]
     }
   }
 }

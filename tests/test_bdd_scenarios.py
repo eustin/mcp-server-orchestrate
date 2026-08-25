@@ -7,7 +7,7 @@ from typing import Any
 import pytest
 from pytest_bdd import given, parsers, scenarios, then, when
 
-from orchestrator_mcp.models import (
+from orchestrate_mcp.models import (
     ApproveResult,
     ArchiveResult,
     DAGResult,
@@ -15,12 +15,12 @@ from orchestrator_mcp.models import (
     StatusResult,
     VerifyResult,
 )
-from orchestrator_mcp.prompts.complete import COMPLETE_PHASE_PROMPT
-from orchestrator_mcp.prompts.design import DESIGN_PHASE_PROMPT
-from orchestrator_mcp.prompts.execute import EXECUTE_PHASE_PROMPT
-from orchestrator_mcp.prompts.plan import PLAN_PHASE_PROMPT
-from orchestrator_mcp.prompts.verify import VERIFY_PHASE_PROMPT
-from orchestrator_mcp.server import (
+from orchestrate_mcp.prompts.complete import COMPLETE_PHASE_PROMPT
+from orchestrate_mcp.prompts.design import DESIGN_PHASE_PROMPT
+from orchestrate_mcp.prompts.execute import EXECUTE_PHASE_PROMPT
+from orchestrate_mcp.prompts.plan import PLAN_PHASE_PROMPT
+from orchestrate_mcp.prompts.verify import VERIFY_PHASE_PROMPT
+from orchestrate_mcp.server import (
     orchestrate_approve,
     orchestrate_archive,
     orchestrate_get_dag_batches,
@@ -28,10 +28,10 @@ from orchestrator_mcp.server import (
     orchestrate_status,
     orchestrate_verify,
 )
-from orchestrator_mcp.state import StateManager
+from orchestrate_mcp.state import StateManager
 
-# Register all scenarios from features/orchestrator.feature
-scenarios("features/orchestrator.feature")
+# Register all scenarios from features/orchestrate.feature
+scenarios("features/orchestrate.feature")
 
 
 @pytest.fixture

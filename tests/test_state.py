@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from orchestrator_mcp.state import StateCorruptError, StateManager
+from orchestrate_mcp.state import StateCorruptError, StateManager
 
 
 def test_init_session(temp_workspace: Path) -> None:

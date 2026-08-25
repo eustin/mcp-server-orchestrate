@@ -1,4 +1,4 @@
-Feature: Orchestrator MCP Server Lifecycle and Gate Enforcement
+Feature: Orchestrate MCP Server Lifecycle and Gate Enforcement
   As an AI coding assistant and human developer pair
   We want an MCP server enforcing a structured 4-phase workflow (Design -> Plan -> Execute -> Verify)
   So that complex coding tasks are systematically analyzed, planned, executed by subagents, and verified

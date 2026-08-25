@@ -1,4 +1,4 @@
-"""Orchestrator MCP Server package."""
+"""Orchestrate MCP Server package."""
 
 from .agents import CONCRETE_AGENTS, get_agent_info, load_agent_prompt, resolve_opencode_agents_dirs
 

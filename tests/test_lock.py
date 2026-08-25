@@ -5,7 +5,7 @@ from typing import Any
 
 import pytest
 
-from orchestrator_mcp.lock import LockError, SessionLockManager
+from orchestrate_mcp.lock import LockError, SessionLockManager
 
 
 def test_acquire_lock_atomic(temp_workspace: Path) -> None:

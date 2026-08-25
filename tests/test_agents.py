@@ -3,7 +3,7 @@
 from pathlib import Path
 from unittest.mock import patch
 
-from orchestrator_mcp.agents import (
+from orchestrate_mcp.agents import (
     CONCRETE_AGENTS,
     get_agent_info,
     load_agent_prompt,

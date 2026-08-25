@@ -1,10 +1,10 @@
-"""Contract tests asserting phase prompts satisfy all orchestrator standards and gates."""
+"""Contract tests asserting phase prompts satisfy all orchestrate standards and gates."""
 
-from orchestrator_mcp.prompts.complete import COMPLETE_PHASE_PROMPT
-from orchestrator_mcp.prompts.design import DESIGN_PHASE_PROMPT
-from orchestrator_mcp.prompts.execute import EXECUTE_PHASE_PROMPT
-from orchestrator_mcp.prompts.plan import PLAN_PHASE_PROMPT
-from orchestrator_mcp.prompts.verify import VERIFY_PHASE_PROMPT
+from orchestrate_mcp.prompts.complete import COMPLETE_PHASE_PROMPT
+from orchestrate_mcp.prompts.design import DESIGN_PHASE_PROMPT
+from orchestrate_mcp.prompts.execute import EXECUTE_PHASE_PROMPT
+from orchestrate_mcp.prompts.plan import PLAN_PHASE_PROMPT
+from orchestrate_mcp.prompts.verify import VERIFY_PHASE_PROMPT
 
 
 class TestSelfIdentificationGate:

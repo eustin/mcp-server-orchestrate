@@ -1,11 +1,10 @@
-# AGENTS.md — Orchestrator MCP Server
+# AGENTS.md — Orchestrate MCP Server
 
 ## Architecture & Project Overview
-Python MCP server port of the OpenCode Orchestrator 4-phase machine-verified workflow (**DESIGN → PLAN → EXECUTE → VERIFY → COMPLETE**). Exposes deterministic MCP tools over stdio to enforce human approval gates, state integrity, AST/regex deliverable verification, and DAG task scheduling.
+Python MCP server port of the OpenCode Orchestrate 4-phase machine-verified workflow (**DESIGN → PLAN → EXECUTE → VERIFY → COMPLETE**). Exposes deterministic MCP tools over stdio to enforce human approval gates, state integrity, AST/regex deliverable verification, and DAG task scheduling.
 
-- **Behavioral Source of Truth**: `tests/features/orchestrator.feature` (18 BDD scenarios)
-- **Package Root**: `src/orchestrator_mcp/`
-- **Package Root**: `src/orchestrator_mcp/`
+- **Behavioral Source of Truth**: `tests/features/orchestrate.feature` (26 BDD scenarios)
+- **Package Root**: `src/orchestrate_mcp/`
 
 ## Commands & Toolchain
 Uses `uv` for Python package and environment management (Python >= 3.11).
@@ -27,7 +26,7 @@ uv run ruff format src/ tests/
 uv run mypy src/ tests/
 
 # Run MCP server locally (stdio)
-uv run python -m orchestrator_mcp.server
+uv run python -m orchestrate_mcp.server
 ```
 
 ## Critical Invariants & Rules

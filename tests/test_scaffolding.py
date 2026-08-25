@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from orchestrator_mcp.config import get_orchestrator_dir, resolve_workspace_root
-from orchestrator_mcp.models import (
+from orchestrate_mcp.config import get_orchestrator_dir, resolve_workspace_root
+from orchestrate_mcp.models import (
     ApproveResult,
     ArchiveResult,
     DAGBatch,

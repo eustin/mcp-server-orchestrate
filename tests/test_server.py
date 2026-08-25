@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from orchestrator_mcp.models import (
+from orchestrate_mcp.models import (
     AgentListResult,
     AgentSummary,
     ApproveResult,
@@ -14,12 +14,12 @@ from orchestrator_mcp.models import (
     StatusResult,
     VerifyResult,
 )
-from orchestrator_mcp.prompts.complete import COMPLETE_PHASE_PROMPT
-from orchestrator_mcp.prompts.design import DESIGN_PHASE_PROMPT
-from orchestrator_mcp.prompts.execute import EXECUTE_PHASE_PROMPT
-from orchestrator_mcp.prompts.plan import PLAN_PHASE_PROMPT
-from orchestrator_mcp.prompts.verify import VERIFY_PHASE_PROMPT
-from orchestrator_mcp.server import (
+from orchestrate_mcp.prompts.complete import COMPLETE_PHASE_PROMPT
+from orchestrate_mcp.prompts.design import DESIGN_PHASE_PROMPT
+from orchestrate_mcp.prompts.execute import EXECUTE_PHASE_PROMPT
+from orchestrate_mcp.prompts.plan import PLAN_PHASE_PROMPT
+from orchestrate_mcp.prompts.verify import VERIFY_PHASE_PROMPT
+from orchestrate_mcp.server import (
     get_phase_prompt,
     main,
     orchestrate_approve,
@@ -30,7 +30,7 @@ from orchestrator_mcp.server import (
     orchestrate_status,
     orchestrate_verify,
 )
-from orchestrator_mcp.state import StateCorruptError, StateManager
+from orchestrate_mcp.state import StateCorruptError, StateManager
 
 
 def test_get_phase_prompt() -> None:
@@ -416,6 +416,6 @@ Test command: true
 
 
 def test_main_invokes_mcp_run() -> None:
-    with patch("orchestrator_mcp.server.mcp.run") as mock_run:
+    with patch("orchestrate_mcp.server.mcp.run") as mock_run:
         main()
         mock_run.assert_called_once_with(transport="stdio")

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from orchestrator_mcp.verifier import VerificationEngine
+from orchestrate_mcp.verifier import VerificationEngine
 
 
 def test_verify_design_missing_file(temp_workspace: Path) -> None:

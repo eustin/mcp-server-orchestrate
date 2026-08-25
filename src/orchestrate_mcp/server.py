@@ -26,7 +26,7 @@ from .prompts.verify import VERIFY_PHASE_PROMPT
 from .state import StateManager
 from .verifier import VerificationEngine
 
-mcp = MCPServer("orchestrator-mcp")
+mcp = MCPServer("orchestrate-mcp")
 
 DEFAULT_PROJECT_MANDATES = """# Critical Project Mandates
 
@@ -211,7 +211,7 @@ def orchestrate_get_dag_batches(workspace_root: str | None = None) -> DAGResult:
 
 @mcp.tool()
 def orchestrate_get_agents() -> AgentListResult:
-    """List all specialized orchestrator agent personas. Each `name` is a registered OpenCode subagent ID, spawnable by name via the `subagent` tool even if hidden from the advertised subagent catalog."""
+    """List all specialized orchestrate agent personas. Each `name` is a registered OpenCode subagent ID, spawnable by name via the `subagent` tool even if hidden from the advertised subagent catalog."""
     summaries = [
         AgentSummary(name=name, role=info["role"], description=info["description"])
         for name, info in CONCRETE_AGENTS.items()

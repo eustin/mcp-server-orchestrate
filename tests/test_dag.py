@@ -1,4 +1,4 @@
-from orchestrator_mcp.dag import DAGScheduler
+from orchestrate_mcp.dag import DAGScheduler
 
 
 def test_build_independent_batches() -> None:
