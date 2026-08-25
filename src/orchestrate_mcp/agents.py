@@ -1,13 +1,10 @@
-"""Concrete Agent Personas and Dynamic OpenCode Agent Discovery."""
+"""Concrete Agent Personas and Bundled Persona Loading."""
 
 from __future__ import annotations
 
-import os
 from collections.abc import Callable
 from pathlib import Path
 from typing import TypedDict
-
-from .config import resolve_workspace_root
 
 BUNDLED_AGENTS_DIR: Path = Path(__file__).resolve().parent / "agents"
 
@@ -62,34 +59,13 @@ class AgentInfo(TypedDict):
     prompt_fn: Callable[[], str]
 
 
-def resolve_opencode_agents_dirs(workspace_root: Path | None = None) -> list[Path]:
-    """Return prioritized search directories for OpenCode agent definition files."""
-    root = workspace_root or resolve_workspace_root()
-    home = Path.home()
-    xdg_env = os.environ.get("XDG_CONFIG_HOME")
-    xdg_config = Path(xdg_env) if xdg_env else home / ".config"
-
-    return [
-        root / ".opencode" / "agents",
-        root / "agents",
-        xdg_config / "opencode" / "agents",
-        home / ".opencode" / "agents",
-        BUNDLED_AGENTS_DIR,
-    ]
-
-
-def load_agent_prompt(name: str, workspace_root: Path | None = None) -> str:
-    """Dynamically load agent system prompt from user's OpenCode environment."""
-    search_dirs = resolve_opencode_agents_dirs(workspace_root)
-    for agent_dir in search_dirs:
-        agent_file = agent_dir / f"{name}.md"
-        if agent_file.is_file():
-            try:
-                return agent_file.read_text(encoding="utf-8")
-            except OSError:
-                continue
-
-    return f"# Agent Persona: {name.title()}\nRole: Specialist for {name}."
+def load_agent_prompt(name: str) -> str:
+    """Load the bundled persona prompt for the given agent role."""
+    agent_file = BUNDLED_AGENTS_DIR / f"{name}.md"
+    try:
+        return agent_file.read_text(encoding="utf-8")
+    except OSError:
+        return f"# Agent Persona: {name.title()}\nRole: Specialist for {name}."
 
 
 def get_agent_info(name: str) -> AgentInfo | None:
