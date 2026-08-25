@@ -19,18 +19,22 @@ uv run pytest
 uv run python -m orchestrate_mcp.server
 ```
 
-### OpenCode MCP Configuration (`opencode.json`)
+### MCP Client Configuration
+
+Example OpenCode config (`opencode.json`):
 
 ```json
 {
-  "mcpServers": {
+  "mcp": {
     "orchestrate": {
-      "command": "uv",
-      "args": ["run", "--directory", "/path/to/orchestrate", "python", "-m", "orchestrate_mcp.server"]
+      "type": "local",
+      "command": ["uv", "run", "--project", "/path/to/orchestrate", "python", "-m", "orchestrate_mcp.server"]
     }
   }
 }
 ```
+
+The server runs in stdio mode; `cwd` resolves to the session directory where the client launched the server. See the distribution guide for other clients (Claude Desktop, Cursor, Windsurf).
 
 ---
 
@@ -44,7 +48,7 @@ uv run python -m orchestrate_mcp.server
   - [Example `.orchestrator/plan.md`](#example-orchestratorplanmd)
 - [Quickstart](#quickstart)
   - [Installation & Run](#installation--run)
-  - [OpenCode MCP Configuration](#opencode-mcp-configuration-opencodejson)
+  - [MCP Client Configuration](#mcp-client-configuration)
 
 ---
 

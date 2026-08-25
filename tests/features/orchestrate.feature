@@ -4,7 +4,7 @@ Feature: Orchestrate MCP Server Lifecycle and Gate Enforcement
   So that complex coding tasks are systematically analyzed, planned, executed by subagents, and verified
 
   Background:
-    Given a project workspace directory initialized with Git or OpenCode configuration
+    Given a project workspace directory
 
   # ============================================================================
   # 1. LIFECYCLE & LOCK MANAGEMENT

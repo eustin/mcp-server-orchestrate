@@ -45,7 +45,7 @@ def context() -> dict[str, Any]:
 # ==============================================================================
 
 
-@given("a project workspace directory initialized with Git or OpenCode configuration")
+@given("a project workspace directory")
 def init_project_workspace(temp_workspace: Path) -> Path:
     return temp_workspace
 
