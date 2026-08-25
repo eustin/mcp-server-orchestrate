@@ -31,14 +31,21 @@ def test_mock_dead_pid(mock_dead_pid: None) -> None:
         os.kill(99999, 0)
 
 
-def test_config_resolution(temp_workspace: Path) -> None:
-    sub_dir = temp_workspace / "sub" / "dir"
-    sub_dir.mkdir(parents=True)
-    root = resolve_workspace_root(sub_dir)
-    assert root == temp_workspace
+def test_config_resolution(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    target = tmp_path / "project" / "sub" / "dir"
+    target.mkdir(parents=True)
+    monkeypatch.chdir(target)
+    root = resolve_workspace_root()
+    assert root == target.resolve()
     orch = get_orchestrator_dir(root)
-    assert orch == temp_workspace / ".orchestrator"
+    assert orch == target.resolve() / ".orchestrator"
     assert orch.exists()
+
+
+def test_resolve_workspace_root_uses_given_path(tmp_path: Path) -> None:
+    target = tmp_path / "explicit"
+    target.mkdir()
+    assert resolve_workspace_root(target) == target.resolve()
 
 
 def test_models_instantiation() -> None:

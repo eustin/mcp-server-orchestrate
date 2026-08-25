@@ -7,13 +7,14 @@ import pytest
 
 
 @pytest.fixture
-def temp_workspace(tmp_path: Path) -> Path:
+def temp_workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """Create an isolated temporary workspace initialized with git."""
     ws = tmp_path / "workspace"
     ws.mkdir()
     subprocess.run(["git", "init"], cwd=ws, check=True, capture_output=True)
     orch_dir = ws / ".orchestrator"
     orch_dir.mkdir()
+    monkeypatch.chdir(ws)
     return ws
 
 

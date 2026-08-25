@@ -2,12 +2,8 @@ from pathlib import Path
 
 
 def resolve_workspace_root(start_path: Path | None = None) -> Path:
-    """Find the workspace root by looking upward for .git or .opencode."""
-    curr = (start_path or Path.cwd()).resolve()
-    for parent in [curr] + list(curr.parents):
-        if (parent / ".git").exists() or (parent / ".opencode").exists():
-            return parent
-    return curr
+    """Return the directory the agent session runs in (the MCP server's cwd)."""
+    return (start_path or Path.cwd()).resolve()
 
 
 def get_orchestrator_dir(workspace_root: Path | None = None) -> Path:

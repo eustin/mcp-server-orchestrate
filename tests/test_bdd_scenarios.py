@@ -63,12 +63,12 @@ def ensure_no_active_session(temp_workspace: Path) -> None:
 
 @given("an active orchestration session")
 def ensure_active_session(temp_workspace: Path) -> None:
-    orchestrate_init("Active Session", workspace_root=str(temp_workspace))
+    orchestrate_init("Active Session")
 
 
 @given("an active orchestration session exists with running process PID")
 def active_session_with_running_pid(temp_workspace: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    orchestrate_init("Active Session PID", workspace_root=str(temp_workspace))
+    orchestrate_init("Active Session PID")
     monkeypatch.setattr("os.kill", lambda pid, sig: None)
 
 
@@ -88,7 +88,7 @@ def stale_lock_terminated_process(
 
 @given(parsers.parse('an active orchestration session in phase "{phase}"'))
 def active_session_in_phase(temp_workspace: Path, phase: str) -> None:
-    orchestrate_init(f"Session in {phase}", workspace_root=str(temp_workspace))
+    orchestrate_init(f"Session in {phase}")
     mgr = StateManager(temp_workspace)
     mgr.update_phase(phase)
 
@@ -130,13 +130,13 @@ def client_calls_orchestrate_init(
 ) -> None:
     params: dict[str, str] = {row[0]: row[1] for row in datatable[1:]}
     task_description = params.get("task_description", "Default Task")
-    res = orchestrate_init(task_description=task_description, workspace_root=str(temp_workspace))
+    res = orchestrate_init(task_description=task_description)
     context["last_result"] = res
 
 
 @when('client calls tool "orchestrate_status"')
 def client_calls_orchestrate_status(temp_workspace: Path, context: dict[str, Any]) -> None:
-    res = orchestrate_status(workspace_root=str(temp_workspace))
+    res = orchestrate_status()
     context["last_result"] = res
 
 
@@ -145,25 +145,25 @@ def client_calls_orchestrate_archive(
     temp_workspace: Path, context: dict[str, Any], force: str
 ) -> None:
     force_val = force.strip().lower() == "true"
-    res = orchestrate_archive(force=force_val, workspace_root=str(temp_workspace))
+    res = orchestrate_archive(force=force_val)
     context["last_result"] = res
 
 
 @when('client calls tool "orchestrate_approve"')
 def client_calls_orchestrate_approve(temp_workspace: Path, context: dict[str, Any]) -> None:
-    res = orchestrate_approve(workspace_root=str(temp_workspace))
+    res = orchestrate_approve()
     context["last_result"] = res
 
 
 @when('client calls tool "orchestrate_verify"')
 def client_calls_orchestrate_verify(temp_workspace: Path, context: dict[str, Any]) -> None:
-    res = orchestrate_verify(workspace_root=str(temp_workspace))
+    res = orchestrate_verify()
     context["last_result"] = res
 
 
 @when('client calls tool "orchestrate_get_dag_batches"')
 def client_calls_orchestrate_get_dag_batches(temp_workspace: Path, context: dict[str, Any]) -> None:
-    res = orchestrate_get_dag_batches(workspace_root=str(temp_workspace))
+    res = orchestrate_get_dag_batches()
     context["last_result"] = res
 
 
@@ -289,7 +289,7 @@ def verify_archive_confirmation(context: dict[str, Any]) -> None:
 
 @given('an active session in phase "DESIGN" with current_phase_approved false')
 def active_session_design_unapproved(temp_workspace: Path) -> None:
-    orchestrate_init("Design Task", workspace_root=str(temp_workspace))
+    orchestrate_init("Design Task")
 
 
 @then('server sets current_phase_approved to true in ".orchestrator/session.json"')
@@ -335,7 +335,7 @@ def verify_tool_returns_no_session_error(context: dict[str, Any]) -> None:
 
 @given(parsers.parse('an active session in phase "{phase}"'))
 def active_session_in_specific_phase(temp_workspace: Path, phase: str) -> None:
-    orchestrate_init(f"Task in {phase}", workspace_root=str(temp_workspace))
+    orchestrate_init(f"Task in {phase}")
     mgr = StateManager(temp_workspace)
     mgr.update_phase(phase)
 
@@ -370,8 +370,8 @@ def ensure_current_phase_unapproved(temp_workspace: Path) -> None:
 
 @given('an active session in phase "DESIGN" with current_phase_approved true')
 def active_session_design_approved(temp_workspace: Path) -> None:
-    orchestrate_init("Design Task", workspace_root=str(temp_workspace))
-    orchestrate_approve(workspace_root=str(temp_workspace))
+    orchestrate_init("Design Task")
+    orchestrate_approve()
 
 
 @given('file ".orchestrator/design.md" lacks "## Self-Confidence Audit"')
@@ -463,10 +463,10 @@ def ensure_valid_plan_md_exists(temp_workspace: Path) -> None:
 
 @given('an active session in phase "PLAN" with current_phase_approved true')
 def active_session_plan_approved(temp_workspace: Path) -> None:
-    orchestrate_init("Plan Task", workspace_root=str(temp_workspace))
+    orchestrate_init("Plan Task")
     mgr = StateManager(temp_workspace)
     mgr.update_phase("PLAN")
-    orchestrate_approve(workspace_root=str(temp_workspace))
+    orchestrate_approve()
 
 
 @when(
@@ -483,7 +483,7 @@ def plan_md_has_invalid_task_tags(temp_workspace: Path, context: dict[str, Any])
         "## Verification\n"
         "Test command: pytest\n"
     )
-    res = orchestrate_verify(workspace_root=str(temp_workspace))
+    res = orchestrate_verify()
     context["last_result"] = res
 
 
@@ -506,7 +506,7 @@ def plan_md_missing_barrier_task(temp_workspace: Path, context: dict[str, Any]) 
         "## Verification\n"
         "Test command: pytest\n"
     )
-    res = orchestrate_verify(workspace_root=str(temp_workspace))
+    res = orchestrate_verify()
     context["last_result"] = res
 
 
@@ -524,7 +524,7 @@ def plan_md_has_none_test_command(temp_workspace: Path, context: dict[str, Any])
         "## Verification\n"
         "Test command: None\n"
     )
-    res = orchestrate_verify(workspace_root=str(temp_workspace))
+    res = orchestrate_verify()
     context["last_result"] = res
 
 
@@ -660,7 +660,7 @@ def test_execution_exits_nonzero(
         )
 
     monkeypatch.setattr("subprocess.run", mock_subprocess_run)
-    res = orchestrate_verify(workspace_root=str(temp_workspace))
+    res = orchestrate_verify()
     context["last_result"] = res
 
 
@@ -684,7 +684,7 @@ def test_execution_exits_zero(
         )
 
     monkeypatch.setattr("subprocess.run", mock_subprocess_run)
-    res = orchestrate_verify(workspace_root=str(temp_workspace))
+    res = orchestrate_verify()
     context["last_result"] = res
 
 
@@ -701,7 +701,7 @@ def verify_complete_phase_sop_returned(context: dict[str, Any]) -> None:
 
 @given(parsers.parse('".orchestrator/plan.md" defines tasks:'))
 def plan_md_defines_dag_tasks(temp_workspace: Path, datatable: list[list[str]]) -> None:
-    orchestrate_init("DAG Session", workspace_root=str(temp_workspace))
+    orchestrate_init("DAG Session")
     plan_file = temp_workspace / ".orchestrator" / "plan.md"
     plan_file.parent.mkdir(parents=True, exist_ok=True)
 

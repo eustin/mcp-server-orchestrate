@@ -35,7 +35,7 @@ uv run python -m orchestrate_mcp.server
 1. **State File Integrity**:
    - Internal state file is `.orchestrator/session.json`.
    - Corrupted or unparseable state file raises `StateCorruptError`.
-   - Runtime state lives under `.orchestrator/` in the resolved workspace root (found by looking upward for `.git` or `.opencode`).
+   - Runtime state lives under `.orchestrator/` in the resolved workspace root (the directory the MCP server process runs in — the agent session's cwd). Tools accept no `workspace_root` parameter; agents must not override the session directory.
 
 2. **Atomic Session Locking**:
    - Lock file is `.orchestrator/session.lock`.

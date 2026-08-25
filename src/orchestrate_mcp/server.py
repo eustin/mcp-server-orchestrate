@@ -1,5 +1,4 @@
 import json
-from pathlib import Path
 
 from mcp.server.mcpserver import MCPServer
 
@@ -52,9 +51,9 @@ def get_phase_prompt(phase: str) -> str:
 
 
 @mcp.tool()
-def orchestrate_init(task_description: str, workspace_root: str | None = None) -> InitResult:
+def orchestrate_init(task_description: str) -> InitResult:
     """Initialize a new orchestration session."""
-    root = resolve_workspace_root(Path(workspace_root) if workspace_root else None)
+    root = resolve_workspace_root()
     lock_mgr = SessionLockManager(root)
     state_mgr = StateManager(root)
 
@@ -100,9 +99,9 @@ def orchestrate_init(task_description: str, workspace_root: str | None = None) -
 
 
 @mcp.tool()
-def orchestrate_status(workspace_root: str | None = None) -> StatusResult:
+def orchestrate_status() -> StatusResult:
     """Query current session status and active phase."""
-    root = resolve_workspace_root(Path(workspace_root) if workspace_root else None)
+    root = resolve_workspace_root()
     state_mgr = StateManager(root)
     state = state_mgr.load_state()
     if not state:
@@ -115,9 +114,9 @@ def orchestrate_status(workspace_root: str | None = None) -> StatusResult:
 
 
 @mcp.tool()
-def orchestrate_approve(workspace_root: str | None = None) -> ApproveResult:
+def orchestrate_approve() -> ApproveResult:
     """Grant human approval for the current phase deliverable."""
-    root = resolve_workspace_root(Path(workspace_root) if workspace_root else None)
+    root = resolve_workspace_root()
     state_mgr = StateManager(root)
     state = state_mgr.load_state()
     if not state:
@@ -133,9 +132,9 @@ def orchestrate_approve(workspace_root: str | None = None) -> ApproveResult:
 
 
 @mcp.tool()
-def orchestrate_verify(workspace_root: str | None = None) -> VerifyResult:
+def orchestrate_verify() -> VerifyResult:
     """Run machine verification on current phase deliverables and advance phase on success."""
-    root = resolve_workspace_root(Path(workspace_root) if workspace_root else None)
+    root = resolve_workspace_root()
     state_mgr = StateManager(root)
     state = state_mgr.load_state()
     if not state:
@@ -179,9 +178,9 @@ def orchestrate_verify(workspace_root: str | None = None) -> VerifyResult:
 
 
 @mcp.tool()
-def orchestrate_archive(force: bool = True, workspace_root: str | None = None) -> ArchiveResult:
+def orchestrate_archive(force: bool = True) -> ArchiveResult:
     """Archive current orchestration deliverables and release session lock."""
-    root = resolve_workspace_root(Path(workspace_root) if workspace_root else None)
+    root = resolve_workspace_root()
     lock_mgr = SessionLockManager(root)
     res = lock_mgr.force_archive()
     archived_id = res.get("archived_session_id")
@@ -193,9 +192,9 @@ def orchestrate_archive(force: bool = True, workspace_root: str | None = None) -
 
 
 @mcp.tool()
-def orchestrate_get_dag_batches(workspace_root: str | None = None) -> DAGResult:
+def orchestrate_get_dag_batches() -> DAGResult:
     """Compute topological execution batches from plan.md tasks."""
-    root = resolve_workspace_root(Path(workspace_root) if workspace_root else None)
+    root = resolve_workspace_root()
     state_mgr = StateManager(root)
     try:
         tasks = state_mgr.parse_plan_tasks()

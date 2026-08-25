@@ -43,7 +43,7 @@ def test_get_phase_prompt() -> None:
 
 
 def test_orchestrate_init_success(temp_workspace: Path) -> None:
-    res = orchestrate_init("Add JWT Authentication", workspace_root=str(temp_workspace))
+    res = orchestrate_init("Add JWT Authentication")
     assert isinstance(res, InitResult)
     assert res.success is True
     assert res.phase == "DESIGN"
@@ -83,10 +83,10 @@ def test_orchestrate_get_agents() -> None:
 def test_orchestrate_init_concurrent_lock_failure(
     temp_workspace: Path, mock_alive_pid: None
 ) -> None:
-    res1 = orchestrate_init("Task 1", workspace_root=str(temp_workspace))
+    res1 = orchestrate_init("Task 1")
     assert res1.success is True
 
-    res2 = orchestrate_init("Task 2", workspace_root=str(temp_workspace))
+    res2 = orchestrate_init("Task 2")
     assert res2.success is False
     assert res2.error is not None
     assert "Active orchestration session" in res2.error
@@ -95,11 +95,11 @@ def test_orchestrate_init_concurrent_lock_failure(
 def test_orchestrate_init_does_not_corrupt_state_on_live_lock_failure(
     temp_workspace: Path, mock_alive_pid: None
 ) -> None:
-    res1 = orchestrate_init("Task 1", workspace_root=str(temp_workspace))
+    res1 = orchestrate_init("Task 1")
     assert res1.success is True
     original_session_id = res1.session_id
 
-    res2 = orchestrate_init("Task 2", workspace_root=str(temp_workspace))
+    res2 = orchestrate_init("Task 2")
     assert res2.success is False
     assert res2.error is not None
     assert "Active orchestration session" in res2.error
@@ -114,7 +114,7 @@ def test_orchestrate_init_reclaims_stale_lock(temp_workspace: Path, mock_dead_pi
     lock_file = temp_workspace / ".orchestrator" / "session.lock"
     lock_file.write_text(json.dumps({"session_id": "old-session", "pid": 99999}))
 
-    res = orchestrate_init("Resume Work", workspace_root=str(temp_workspace))
+    res = orchestrate_init("Resume Work")
     assert res.success is True
     assert res.phase == "DESIGN"
 
@@ -132,7 +132,7 @@ def test_orchestrate_init_archives_stale_session_on_dead_pid(
     design_file = temp_workspace / ".orchestrator" / "design.md"
     design_file.write_text("# Old Design Doc\n")
 
-    res = orchestrate_init("Fresh New Task", workspace_root=str(temp_workspace))
+    res = orchestrate_init("Fresh New Task")
     assert res.success is True
     assert res.session_id != old_session_id
 
@@ -147,7 +147,7 @@ def test_orchestrate_init_archives_stale_session_on_dead_pid(
 
 
 def test_orchestrate_status_no_session(temp_workspace: Path) -> None:
-    res = orchestrate_status(workspace_root=str(temp_workspace))
+    res = orchestrate_status()
     assert isinstance(res, StatusResult)
     assert res.active_session is False
     assert res.phase is None
@@ -155,31 +155,31 @@ def test_orchestrate_status_no_session(temp_workspace: Path) -> None:
 
 
 def test_orchestrate_status_active_session(temp_workspace: Path) -> None:
-    orchestrate_init("Status Test", workspace_root=str(temp_workspace))
-    res = orchestrate_status(workspace_root=str(temp_workspace))
+    orchestrate_init("Status Test")
+    res = orchestrate_status()
     assert res.active_session is True
     assert res.phase == "DESIGN"
 
 
 def test_orchestrate_status_corrupt_state_surfaces_error(temp_workspace: Path) -> None:
-    orchestrate_init("Corrupt Test", workspace_root=str(temp_workspace))
+    orchestrate_init("Corrupt Test")
     state_file = temp_workspace / ".orchestrator" / "session.json"
     state_file.write_text("{ not valid json ")
 
     with pytest.raises(StateCorruptError):
-        orchestrate_status(workspace_root=str(temp_workspace))
+        orchestrate_status()
 
 
 def test_orchestrate_approve_no_session(temp_workspace: Path) -> None:
-    res = orchestrate_approve(workspace_root=str(temp_workspace))
+    res = orchestrate_approve()
     assert isinstance(res, ApproveResult)
     assert res.success is False
     assert res.error == "No active session state found."
 
 
 def test_orchestrate_approve_success(temp_workspace: Path) -> None:
-    orchestrate_init("Approve Test", workspace_root=str(temp_workspace))
-    res = orchestrate_approve(workspace_root=str(temp_workspace))
+    orchestrate_init("Approve Test")
+    res = orchestrate_approve()
     assert res.success is True
     assert res.phase == "DESIGN"
     assert res.message == "Phase 'DESIGN' approved by user. Machine verification is now enabled."
@@ -192,7 +192,7 @@ def test_orchestrate_approve_success(temp_workspace: Path) -> None:
 
 
 def test_orchestrate_verify_no_session(temp_workspace: Path) -> None:
-    res = orchestrate_verify(workspace_root=str(temp_workspace))
+    res = orchestrate_verify()
     assert isinstance(res, VerifyResult)
     assert res.success is False
     assert res.phase == "UNKNOWN"
@@ -200,10 +200,10 @@ def test_orchestrate_verify_no_session(temp_workspace: Path) -> None:
 
 
 def test_orchestrate_verify_design_lifecycle(temp_workspace: Path) -> None:
-    orchestrate_init("Design Lifecycle", workspace_root=str(temp_workspace))
+    orchestrate_init("Design Lifecycle")
 
     # Without design.md and approval
-    res = orchestrate_verify(workspace_root=str(temp_workspace))
+    res = orchestrate_verify()
     assert res.success is False
     assert res.phase == "DESIGN"
     assert any("Missing required deliverable" in e for e in res.errors)
@@ -213,13 +213,13 @@ def test_orchestrate_verify_design_lifecycle(temp_workspace: Path) -> None:
     design_file.write_text(
         "# Design Doc\n\n## Requirements\nReqs\n\n## Architecture\nArch\n\n## Self-Confidence Audit\nAudit\n"
     )
-    res = orchestrate_verify(workspace_root=str(temp_workspace))
+    res = orchestrate_verify()
     assert res.success is False
     assert any("GATE BLOCKED" in e for e in res.errors)
 
     # Approve and verify again
-    orchestrate_approve(workspace_root=str(temp_workspace))
-    res = orchestrate_verify(workspace_root=str(temp_workspace))
+    orchestrate_approve()
+    res = orchestrate_verify()
     assert res.success is True
     assert res.phase == "PLAN"
     assert res.previous_phase == "DESIGN"
@@ -229,14 +229,14 @@ def test_orchestrate_verify_design_lifecycle(temp_workspace: Path) -> None:
 def test_orchestrate_verify_plan_and_execute_and_testing_lifecycle(
     temp_workspace: Path,
 ) -> None:
-    orchestrate_init("Full Lifecycle", workspace_root=str(temp_workspace))
+    orchestrate_init("Full Lifecycle")
 
     # Setup design and approve
     (temp_workspace / ".orchestrator" / "design.md").write_text(
         "## Requirements\n## Architecture\n## Self-Confidence Audit\n"
     )
-    orchestrate_approve(workspace_root=str(temp_workspace))
-    orchestrate_verify(workspace_root=str(temp_workspace))
+    orchestrate_approve()
+    orchestrate_verify()
 
     # In PLAN phase
     plan_file = temp_workspace / ".orchestrator" / "plan.md"
@@ -256,26 +256,26 @@ Test command: true
     plan_file.write_text(plan_content)
 
     # Verify PLAN without approval
-    res = orchestrate_verify(workspace_root=str(temp_workspace))
+    res = orchestrate_verify()
     assert res.success is False
     assert any("GATE BLOCKED" in e for e in res.errors)
 
     # Approve and verify PLAN
-    orchestrate_approve(workspace_root=str(temp_workspace))
-    res = orchestrate_verify(workspace_root=str(temp_workspace))
+    orchestrate_approve()
+    res = orchestrate_verify()
     assert res.success is True
     assert res.phase == "EXECUTE"
     assert res.next_sop_instructions == EXECUTE_PHASE_PROMPT
 
     # In EXECUTE phase: tasks incomplete
-    res = orchestrate_verify(workspace_root=str(temp_workspace))
+    res = orchestrate_verify()
     assert res.success is False
     assert any("UNFINISHED TASK" in e for e in res.errors)
 
     # Mark tasks checked but target missing
     completed_plan = plan_content.replace("- [ ]", "- [x]")
     plan_file.write_text(completed_plan)
-    res = orchestrate_verify(workspace_root=str(temp_workspace))
+    res = orchestrate_verify()
     assert res.success is False
     assert any("does not exist" in e for e in res.errors)
 
@@ -284,29 +284,29 @@ Test command: true
     (temp_workspace / "src" / "db.py").write_text("print('db ready')\n")
 
     # Verify EXECUTE phase succeeds -> advances to VERIFY
-    res = orchestrate_verify(workspace_root=str(temp_workspace))
+    res = orchestrate_verify()
     assert res.success is True
     assert res.phase == "VERIFY"
     assert res.next_sop_instructions == VERIFY_PHASE_PROMPT
 
     # In VERIFY phase: test command runs 'true' -> exit code 0 -> advances to COMPLETE
-    res = orchestrate_verify(workspace_root=str(temp_workspace))
+    res = orchestrate_verify()
     assert res.success is True
     assert res.phase == "COMPLETE"
     assert res.next_sop_instructions == COMPLETE_PHASE_PROMPT
 
     # In COMPLETE phase: verify returns success
-    res = orchestrate_verify(workspace_root=str(temp_workspace))
+    res = orchestrate_verify()
     assert res.success is True
     assert res.phase == "COMPLETE"
 
 
 def test_orchestrate_archive(temp_workspace: Path) -> None:
-    orchestrate_init("Archive Test", workspace_root=str(temp_workspace))
+    orchestrate_init("Archive Test")
     (temp_workspace / ".orchestrator" / "design.md").write_text("design")
     (temp_workspace / ".orchestrator" / "plan.md").write_text("plan")
 
-    res = orchestrate_archive(force=True, workspace_root=str(temp_workspace))
+    res = orchestrate_archive(force=True)
     assert isinstance(res, ArchiveResult)
     assert res.success is True
     assert res.archived_session_id is not None
@@ -322,7 +322,7 @@ def test_orchestrate_archive(temp_workspace: Path) -> None:
 
 
 def test_orchestrate_get_dag_batches(temp_workspace: Path) -> None:
-    orchestrate_init("DAG Test", workspace_root=str(temp_workspace))
+    orchestrate_init("DAG Test")
     plan_file = temp_workspace / ".orchestrator" / "plan.md"
     plan_file.write_text("""## Tasks
 - [ ] **task-1**: Step 1 (Agent: a1) (Target: f1.py) (blocked_by: [])
@@ -338,7 +338,7 @@ def test_orchestrate_get_dag_batches(temp_workspace: Path) -> None:
 Test command: true
 """)
 
-    res = orchestrate_get_dag_batches(workspace_root=str(temp_workspace))
+    res = orchestrate_get_dag_batches()
     assert isinstance(res, DAGResult)
     assert res.success is True
     assert res.total_tasks == 3
@@ -351,7 +351,7 @@ Test command: true
 
 
 def test_orchestrate_get_dag_batches_canonical_format(temp_workspace: Path) -> None:
-    orchestrate_init("Canonical DAG Test", workspace_root=str(temp_workspace))
+    orchestrate_init("Canonical DAG Test")
     plan_file = temp_workspace / ".orchestrator" / "plan.md"
     plan_file.write_text("""## Tasks
 - [ ] **T1**: do A (Agent: coder, Target: src/a.py, blocked_by: [])
@@ -367,7 +367,7 @@ def test_orchestrate_get_dag_batches_canonical_format(temp_workspace: Path) -> N
 Test command: true
 """)
 
-    res = orchestrate_get_dag_batches(workspace_root=str(temp_workspace))
+    res = orchestrate_get_dag_batches()
     assert isinstance(res, DAGResult)
     assert res.success is True
     assert res.total_tasks == 3
@@ -392,7 +392,7 @@ Test command: true
 
 
 def test_orchestrate_get_dag_batches_canonical_collision_guard(temp_workspace: Path) -> None:
-    orchestrate_init("Collision Guard Test", workspace_root=str(temp_workspace))
+    orchestrate_init("Collision Guard Test")
     plan_file = temp_workspace / ".orchestrator" / "plan.md"
     plan_file.write_text("""## Tasks
 - [ ] **T1**: Step 1 (Agent: coder, Target: src/auth.py, blocked_by: [])
@@ -406,7 +406,7 @@ def test_orchestrate_get_dag_batches_canonical_collision_guard(temp_workspace: P
 Test command: true
 """)
 
-    res = orchestrate_get_dag_batches(workspace_root=str(temp_workspace))
+    res = orchestrate_get_dag_batches()
     assert isinstance(res, DAGResult)
     assert res.success is True
     assert res.total_tasks == 2
