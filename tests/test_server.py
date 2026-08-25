@@ -69,7 +69,7 @@ def test_orchestrate_get_agents() -> None:
     res = orchestrate_get_agents()
     assert isinstance(res, AgentListResult)
     assert res.success is True
-    assert len(res.agents) == 12
+    assert len(res.agents) == 8
     agent_names = [a.name for a in res.agents]
     assert "architect" in agent_names
     assert "implementation-reviewer" in agent_names

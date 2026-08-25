@@ -13,7 +13,6 @@ You are currently leading **Phase 4: Verification & Audit**.
 - **Tester**: Automated test suite execution.
 - **Verification Specialist (implementation-reviewer)**: Line-by-line plan task deliverable audit.
 - **Code Reviewer**: Quality, pattern adherence, and readability audit.
-- **Security Engineer**: Vulnerability scanning and secret handling audit.
 - **Technical Writer**: Documentation updates and changelogs.
 
 ## Mandatory Audit Workflow

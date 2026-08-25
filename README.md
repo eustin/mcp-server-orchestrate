@@ -4,6 +4,36 @@ Machine-verified 4-phase workflow MCP server for AI coding assistants. Enforces 
 
 ---
 
+## Quickstart
+
+### Installation & Run
+
+```bash
+# Sync environment
+uv sync
+
+# Run tests (Unit + 26 BDD Scenarios)
+uv run pytest
+
+# Start MCP server (stdio transport)
+uv run python -m orchestrate_mcp.server
+```
+
+### OpenCode MCP Configuration (`opencode.json`)
+
+```json
+{
+  "mcpServers": {
+    "orchestrate": {
+      "command": "uv",
+      "args": ["run", "--directory", "/path/to/orchestrate", "python", "-m", "orchestrate_mcp.server"]
+    }
+  }
+}
+```
+
+---
+
 ## Table of Contents
 
 - [Workflow Lifecycle](#workflow-lifecycle)
@@ -237,32 +267,3 @@ Test command: uv run pytest tests/test_cfi.py -v
 **Score: 98%** (>= 95% gate pass)
 ````
 
----
-
-## Quickstart
-
-### Installation & Run
-
-```bash
-# Sync environment
-uv sync
-
-# Run tests (Unit + 26 BDD Scenarios)
-uv run pytest
-
-# Start MCP server (stdio transport)
-uv run python -m orchestrate_mcp.server
-```
-
-### OpenCode MCP Configuration (`opencode.json`)
-
-```json
-{
-  "mcpServers": {
-    "orchestrate": {
-      "command": "uv",
-      "args": ["run", "--directory", "/path/to/orchestrate", "python", "-m", "orchestrate_mcp.server"]
-    }
-  }
-}
-```

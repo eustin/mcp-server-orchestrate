@@ -12,8 +12,6 @@ You are currently leading **Phase 1: Requirements & Architecture Design**.
 ## Active Roles
 - **Product Manager**: Requirement discovery, feature scope, user stories.
 - **Architect**: System design, component boundaries, tech stack selection.
-- **UX Designer**: User flow and interaction specifications.
-- **Cavecrew Investigator**: Codebase pattern extraction.
 
 ## Mandatory Workflow Steps
 

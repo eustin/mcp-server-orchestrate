@@ -9,6 +9,52 @@ from typing import TypedDict
 
 from .config import resolve_workspace_root
 
+BUNDLED_AGENTS_DIR: Path = Path(__file__).resolve().parent / "agents"
+
+
+CONCRETE_AGENTS: dict[str, AgentInfo] = {
+    "architect": {
+        "role": "System Architect",
+        "description": "System design specialist for architecture decisions, technology selection, and component boundaries.",
+        "prompt_fn": lambda: load_agent_prompt("architect"),
+    },
+    "product-manager": {
+        "role": "Product Manager",
+        "description": "Product management specialist for requirements gathering, PRDs, user stories, feature prioritization, and competitive analysis.",
+        "prompt_fn": lambda: load_agent_prompt("product-manager"),
+    },
+    "coder": {
+        "role": "Coder",
+        "description": "Implementation specialist for writing clean, well-structured code following established patterns and SOLID principles.",
+        "prompt_fn": lambda: load_agent_prompt("coder"),
+    },
+    "debugger": {
+        "role": "Debugger",
+        "description": "Debugging specialist for root cause analysis, investigating defects, and tracing execution flow.",
+        "prompt_fn": lambda: load_agent_prompt("debugger"),
+    },
+    "tester": {
+        "role": "Tester",
+        "description": "Testing specialist for unit, integration, and E2E test implementation, edge case discovery, and test coverage.",
+        "prompt_fn": lambda: load_agent_prompt("tester"),
+    },
+    "implementation-reviewer": {
+        "role": "Implementation Reviewer",
+        "description": "Implementation reviewer specializing in plan conformance verification. Verifies deliverable inventory against approved implementation plan.",
+        "prompt_fn": lambda: load_agent_prompt("implementation-reviewer"),
+    },
+    "code-reviewer": {
+        "role": "Code Reviewer",
+        "description": "Code reviewer specializing in verified code quality assessment, SOLID principles, security, and logic correctness.",
+        "prompt_fn": lambda: load_agent_prompt("code-reviewer"),
+    },
+    "technical-writer": {
+        "role": "Technical Writer",
+        "description": "Technical writer specializing in clear, accurate developer documentation, API contracts, READMEs, and architecture docs.",
+        "prompt_fn": lambda: load_agent_prompt("technical-writer"),
+    },
+}
+
 
 class AgentInfo(TypedDict):
     role: str
@@ -28,6 +74,7 @@ def resolve_opencode_agents_dirs(workspace_root: Path | None = None) -> list[Pat
         root / "agents",
         xdg_config / "opencode" / "agents",
         home / ".opencode" / "agents",
+        BUNDLED_AGENTS_DIR,
     ]
 
 
@@ -43,70 +90,6 @@ def load_agent_prompt(name: str, workspace_root: Path | None = None) -> str:
                 continue
 
     return f"# Agent Persona: {name.title()}\nRole: Specialist for {name}."
-
-
-CONCRETE_AGENTS: dict[str, AgentInfo] = {
-    "architect": {
-        "role": "System Architect",
-        "description": "System design specialist for architecture decisions, technology selection, and component boundaries.",
-        "prompt_fn": lambda: load_agent_prompt("architect"),
-    },
-    "product-manager": {
-        "role": "Product Manager",
-        "description": "Product management specialist for requirements gathering, PRDs, user stories, feature prioritization, and competitive analysis.",
-        "prompt_fn": lambda: load_agent_prompt("product-manager"),
-    },
-    "ux-designer": {
-        "role": "UX Designer",
-        "description": "UX designer for user flow design, interaction patterns, wireframe descriptions, and usability evaluation.",
-        "prompt_fn": lambda: load_agent_prompt("ux-designer"),
-    },
-    "cavecrew-investigator": {
-        "role": "Cavecrew Investigator",
-        "description": "Read-only code locator. Returns file:line table for where symbols, functions, or configs are defined.",
-        "prompt_fn": lambda: load_agent_prompt("cavecrew-investigator"),
-    },
-    "coder": {
-        "role": "Coder",
-        "description": "Implementation specialist for writing clean, well-structured code following established patterns and SOLID principles.",
-        "prompt_fn": lambda: load_agent_prompt("coder"),
-    },
-    "debugger": {
-        "role": "Debugger",
-        "description": "Debugging specialist for root cause analysis, investigating defects, and tracing execution flow.",
-        "prompt_fn": lambda: load_agent_prompt("debugger"),
-    },
-    "performance-engineer": {
-        "role": "Performance Engineer",
-        "description": "Performance engineering specialist for systematic performance analysis, profiling, benchmarking, and latency optimization.",
-        "prompt_fn": lambda: load_agent_prompt("performance-engineer"),
-    },
-    "tester": {
-        "role": "Tester",
-        "description": "Testing specialist for unit, integration, and E2E test implementation, edge case discovery, and test coverage.",
-        "prompt_fn": lambda: load_agent_prompt("tester"),
-    },
-    "implementation-reviewer": {
-        "role": "Implementation Reviewer",
-        "description": "Implementation reviewer specializing in plan conformance verification. Verifies deliverable inventory against approved implementation plan.",
-        "prompt_fn": lambda: load_agent_prompt("implementation-reviewer"),
-    },
-    "code-reviewer": {
-        "role": "Code Reviewer",
-        "description": "Code reviewer specializing in verified code quality assessment, SOLID principles, security, and logic correctness.",
-        "prompt_fn": lambda: load_agent_prompt("code-reviewer"),
-    },
-    "security-engineer": {
-        "role": "Security Engineer",
-        "description": "Security engineer specializing in application security assessment, vulnerability scanning, threat modeling, and OWASP Top 10 audits.",
-        "prompt_fn": lambda: load_agent_prompt("security-engineer"),
-    },
-    "technical-writer": {
-        "role": "Technical Writer",
-        "description": "Technical writer specializing in clear, accurate developer documentation, API contracts, READMEs, and architecture docs.",
-        "prompt_fn": lambda: load_agent_prompt("technical-writer"),
-    },
-}
 
 
 def get_agent_info(name: str) -> AgentInfo | None:

@@ -11,7 +11,6 @@ You are currently leading **Phase 2: Implementation Planning**.
 
 ## Active Roles
 - **Architect**: Task decomposition, dependency ordering, target file specification.
-- **Cavecrew Investigator**: Codebase research and dependency tracing.
 
 ## Mandatory Workflow Steps
 

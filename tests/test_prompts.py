@@ -46,7 +46,7 @@ class TestDesignPhasePrompt:
         assert "orchestrate_verify" in DESIGN_PHASE_PROMPT
         assert "95%" in DESIGN_PHASE_PROMPT
         assert "Active Roles" in DESIGN_PHASE_PROMPT
-        for role in ["Product Manager", "Architect", "UX Designer", "Cavecrew Investigator"]:
+        for role in ["Product Manager", "Architect"]:
             assert role in DESIGN_PHASE_PROMPT
 
 
@@ -71,7 +71,6 @@ class TestExecutePhasePrompt:
         for role in [
             "coder",
             "debugger",
-            "performance-engineer",
             "tester",
             "implementation-reviewer",
         ]:

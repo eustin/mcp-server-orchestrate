@@ -4,6 +4,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from orchestrate_mcp.agents import (
+    BUNDLED_AGENTS_DIR,
     CONCRETE_AGENTS,
     get_agent_info,
     load_agent_prompt,
@@ -11,19 +12,15 @@ from orchestrate_mcp.agents import (
 )
 
 
-def test_concrete_agents_registry_has_all_12_roles() -> None:
+def test_concrete_agents_registry_has_all_8_roles() -> None:
     expected_roles = [
         "architect",
         "product-manager",
-        "ux-designer",
-        "cavecrew-investigator",
         "coder",
         "debugger",
-        "performance-engineer",
         "tester",
         "implementation-reviewer",
         "code-reviewer",
-        "security-engineer",
         "technical-writer",
     ]
     for role in expected_roles:
@@ -32,6 +29,14 @@ def test_concrete_agents_registry_has_all_12_roles() -> None:
         assert "role" in info
         assert "description" in info
         assert callable(info["prompt_fn"])
+
+
+def test_bundled_agents_dir_covers_all_registered_roles() -> None:
+    assert BUNDLED_AGENTS_DIR.is_dir()
+    for role in CONCRETE_AGENTS:
+        assert (BUNDLED_AGENTS_DIR / f"{role}.md").is_file(), (
+            f"Missing bundled persona file for role: {role}"
+        )
 
 
 def test_resolve_opencode_agents_dirs_order_default_env(tmp_path: Path) -> None:
@@ -50,6 +55,7 @@ def test_resolve_opencode_agents_dirs_order_default_env(tmp_path: Path) -> None:
             ws_agents,
             home_config_agents,
             home_opencode_agents,
+            BUNDLED_AGENTS_DIR,
         ]
 
 
@@ -113,6 +119,32 @@ def test_load_agent_prompt_fallback_when_file_not_found(tmp_path: Path) -> None:
         prompt = load_agent_prompt("nonexistent-role", workspace_root=ws)
         assert "Agent Persona: Nonexistent-Role" in prompt
         assert "Specialist for nonexistent-role" in prompt
+
+
+def test_load_agent_prompt_bundled_fallback_returns_source_of_truth(tmp_path: Path) -> None:
+    ws = tmp_path / "workspace"
+    ws.mkdir()
+    with (
+        patch("pathlib.Path.home", return_value=tmp_path / "empty_home"),
+        patch.dict("os.environ", {}, clear=True),
+    ):
+        prompt = load_agent_prompt("coder", workspace_root=ws)
+    expected = (BUNDLED_AGENTS_DIR / "coder.md").read_text(encoding="utf-8")
+    assert prompt == expected
+
+
+def test_load_agent_prompt_user_override_beats_bundled(tmp_path: Path) -> None:
+    ws = tmp_path / "workspace"
+    ws_agents = ws / "agents"
+    ws_agents.mkdir(parents=True)
+    (ws_agents / "coder.md").write_text("# Workspace Custom Coder Persona", encoding="utf-8")
+
+    with (
+        patch("pathlib.Path.home", return_value=tmp_path / "empty_home"),
+        patch.dict("os.environ", {}, clear=True),
+    ):
+        prompt = load_agent_prompt("coder", workspace_root=ws)
+    assert prompt == "# Workspace Custom Coder Persona"
 
 
 def test_get_agent_info_helper() -> None:
